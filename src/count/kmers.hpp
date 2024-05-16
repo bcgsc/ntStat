@@ -28,7 +28,7 @@ all_kmer_counts(const std::vector<std::string>& read_files,
   std::cout << "done (" << timer.to_string() << ")" << std::endl;
   const auto seq_reader_flag = get_seq_reader_flag(long_reads);
   for (const auto& file : read_files) {
-    std::cout << "processing " << file << "..." << std::flush;
+    std::cout << "processing " << file << "... " << std::flush;
     timer.start();
     btllib::SeqReader seq_reader(file, seq_reader_flag);
     unsigned num_reads = 0;
