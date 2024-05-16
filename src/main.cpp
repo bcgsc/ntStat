@@ -2,8 +2,7 @@
 #include <functional>
 #include <map>
 
-#include "count/main.hpp"
-#include "filter/main.hpp"
+#include "subcommands/count.hpp"
 #include "version.hpp"
 
 constexpr char const* LOGO = "ntStat";
@@ -15,7 +14,6 @@ get_subcommand(int argc, char* argv[])
 {
   std::map<argparse::ArgumentParser*, subcommand_function> parser_functions = {
     { count::get_argument_parser(), count::main },
-    { filter::get_argument_parser(), filter::main },
   };
   argparse::ArgumentParser parser("ntStat", VERSION);
   for (const auto& item : parser_functions) {
