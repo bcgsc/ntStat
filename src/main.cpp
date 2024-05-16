@@ -7,7 +7,7 @@
 
 constexpr char const* LOGO = "ntStat";
 
-using subcommand_function = std::function<void(const argparse::ArgumentParser&)>;
+using subcommand_function = std::function<int(const argparse::ArgumentParser&)>;
 
 std::pair<argparse::ArgumentParser*, subcommand_function>
 get_subcommand(int argc, char* argv[])
@@ -45,6 +45,5 @@ main(int argc, char* argv[])
   const auto& subcommand = get_subcommand(argc, argv);
   std::cout << LOGO << std::endl;
   std::cout << "v" << VERSION << std::endl;
-  subcommand.second(*subcommand.first);
-  return EXIT_SUCCESS;
+  return subcommand.second(*subcommand.first);
 }

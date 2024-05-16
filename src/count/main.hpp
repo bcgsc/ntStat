@@ -35,7 +35,7 @@ get_argument_parser()
   return parser;
 }
 
-void
+int
 main(const argparse::ArgumentParser& args)
 {
   const auto num_threads = args.get<unsigned>("-t");
@@ -57,8 +57,9 @@ main(const argparse::ArgumentParser& args)
   } else {
     std::cerr << "Need to specify at least one of -k or -s" << std::endl;
     std::cerr << args;
-    std::exit(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
+  return EXIT_SUCCESS;
 }
 
 }
