@@ -77,19 +77,27 @@ insert_all(const std::vector<std::string>& read_files, BloomFilter& bf, bool lon
   }
 }
 
+inline void
+print_seeds(const std::vector<std::string>& seeds)
+{
+  for (size_t i = 0; i < seeds.size(); i++) {
+    std::cout << "[-s] seed " << i + 1 << ": " << seeds[i] << std::endl;
+  }
+}
+
 int
 main(const argparse::ArgumentParser& args)
 {
   const auto num_threads = args.get<unsigned>("-t");
+  const auto out_cbf_size = args.get<size_t>("-b");
+  const auto num_hashes = args.get<unsigned>("-h");
+  const auto long_mode = args.get<bool>("--long");
+  const auto out_path = args.get("-o");
+  const auto read_files = args.get<std::vector<std::string>>("reads");
   omp_set_num_threads(num_threads);
   std::cout << "[-t] thread limit set to " << num_threads << std::endl;
-  const auto num_hashes = args.get<unsigned>("-h");
   std::cout << "[-h] using " << num_hashes << " hash functions" << std::endl;
-  const auto long_mode = args.get<bool>("--long");
   std::cout << "[--long] " << (long_mode ? "long" : "short") << " read data" << std::endl;
-  const auto read_files = args.get<std::vector<std::string>>("reads");
-  const auto out_cbf_size = args.get<size_t>("-b");
-  const auto out_path = args.get("-o");
   Timer timer;
   if (args.is_used("-k")) {
     const auto kmer_length = args.get<unsigned>("-k");
@@ -104,9 +112,7 @@ main(const argparse::ArgumentParser& args)
   } else if (args.is_used("-s")) {
     const auto seeds_path = args.get<std::string>("-s");
     const auto seeds = read_file_lines(seeds_path);
-    for (size_t i = 0; i < seeds.size(); i++) {
-      std::cout << "[-s] seed " << i + 1 << ": " << seeds[i] << std::endl;
-    }
+    print_seeds(seeds);
     timer.start("[-b] initializing CBF (" + std::to_string(out_cbf_size) + " bytes)");
     SeedCountingBloomFilter cbf(out_cbf_size, num_hashes, seeds);
     timer.stop();
@@ -115,7 +121,7 @@ main(const argparse::ArgumentParser& args)
     cbf.save(out_path);
     timer.stop();
   } else {
-    std::cerr << "Need to specify at least one of -k or -s" << std::endl;
+    std::cerr << "need to specify at least one of -k or -s" << std::endl;
     std::cerr << args;
     return EXIT_FAILURE;
   }
