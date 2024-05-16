@@ -1,6 +1,7 @@
 #pragma once
 
 #include <btllib/seq_reader.hpp>
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <stdint.h>
@@ -35,3 +36,38 @@ get_seq_reader_flag(bool long_mode)
     return btllib::SeqReader::Flag::SHORT_MODE;
   }
 }
+
+class Timer
+{
+private:
+  std::chrono::time_point<std::chrono::system_clock> t_start;
+  std::chrono::time_point<std::chrono::system_clock> t_end;
+
+public:
+  /**
+   * Register the current time as the timer's starting point.
+   */
+  void start(const std::string& message)
+  {
+    std::cout << message << "... " << std::flush;
+    this->t_start = std::chrono::system_clock::now();
+  }
+
+  /**
+   * Register the current time as the timer's finish point.
+   */
+  void stop()
+  {
+    this->t_end = std::chrono::system_clock::now();
+    std::cout << "done (" << this->elapsed_seconds() << "s)" << std::endl;
+  }
+
+  /**
+   * Compute the difference between the start and stop points in seconds.
+   */
+  [[nodiscard]] long double elapsed_seconds() const
+  {
+    const std::chrono::duration<double> elapsed = (t_end - t_start);
+    return elapsed.count();
+  }
+};
