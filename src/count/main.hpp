@@ -31,7 +31,7 @@ get_argument_parser()
     .default_value(false)
     .implicit_value(true);
   parser->add_argument("-o").help("path to store output file").required();
-  parser->add_argument("reads").help("path to sequence data file(s)").required().remaining();
+  parser->add_argument("reads").help("path to sequencing data file(s)").required().remaining();
   return parser;
 }
 
