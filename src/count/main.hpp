@@ -7,8 +7,7 @@
 #include <cstdint>
 #include <omp.h>
 
-#include "kmers.hpp"
-#include "seeds.hpp"
+#include "timer.hpp"
 #include "utils.hpp"
 
 namespace count {
@@ -35,6 +34,51 @@ get_argument_parser()
   return parser;
 }
 
+class SeedCountingBloomFilter
+{
+public:
+  SeedCountingBloomFilter(size_t bytes, unsigned num_hashes, const std::vector<std::string>& seeds)
+    : cbf(std::make_unique<btllib::CountingBloomFilter8>(bytes, num_hashes))
+    , seeds(seeds)
+  {
+  }
+
+  void insert(const std::string& seq)
+  {
+    for (const auto& seed : seeds) {
+      btllib::SeedNtHash hash_fn(seq, { seed }, cbf.get()->get_hash_num(), seed.size());
+      while (hash_fn.roll()) {
+        cbf.get()->insert(hash_fn.hashes());
+      }
+    }
+  }
+
+  void save(const std::string& path) { cbf.get()->save(path); }
+
+private:
+  std::unique_ptr<btllib::CountingBloomFilter8> cbf;
+  const std::vector<std::string>& seeds;
+};
+
+template<class BloomFilter>
+inline void
+insert_all(const std::vector<std::string>& read_files, BloomFilter& bf, bool long_mode)
+{
+  Timer timer;
+  for (const auto& file : read_files) {
+    std::cout << "processing " << file << "... " << std::flush;
+    timer.start();
+    const auto seq_reader_flag = get_seq_reader_flag(long_mode);
+    btllib::SeqReader seq_reader(file, seq_reader_flag);
+#pragma omp parallel shared(seq_reader)
+    for (const auto& record : seq_reader) {
+      bf.insert(record.seq);
+    }
+    timer.stop();
+    std::cout << "done (" << timer.to_string() << ")" << std::endl;
+  }
+}
+
 int
 main(const argparse::ArgumentParser& args)
 {
@@ -49,11 +93,15 @@ main(const argparse::ArgumentParser& args)
   std::cout << "[--long] " << (long_mode ? "long" : "short") << " read data" << std::endl;
   if (args.is_used("-k")) {
     const auto kmer_length = args.get<unsigned>("-k");
-    all_kmer_counts(read_files, long_mode, kmer_length, num_hashes, out_cbf_size, out_path);
+    btllib::KmerCountingBloomFilter8 cbf(out_cbf_size, num_hashes, kmer_length);
+    insert_all<btllib::KmerCountingBloomFilter8>(read_files, cbf, long_mode);
+    cbf.save(out_path);
   } else if (args.is_used("-s")) {
     const auto seeds_path = args.get<std::string>("-s");
     const auto seeds = read_file_lines(seeds_path);
-    all_seed_counts(read_files, long_mode, seeds, num_hashes, out_cbf_size, out_path);
+    SeedCountingBloomFilter cbf(out_cbf_size, num_hashes, seeds);
+    insert_all<SeedCountingBloomFilter>(read_files, cbf, long_mode);
+    cbf.save(out_path);
   } else {
     std::cerr << "Need to specify at least one of -k or -s" << std::endl;
     std::cerr << args;
