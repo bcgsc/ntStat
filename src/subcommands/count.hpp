@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <omp.h>
 
-#include "timer.hpp"
 #include "utils.hpp"
 
 namespace count {
@@ -65,17 +64,16 @@ inline void
 insert_all(const std::vector<std::string>& read_files, BloomFilter& bf, bool long_mode)
 {
   Timer timer;
-  for (const auto& file : read_files) {
-    std::cout << "processing " << file << "... " << std::flush;
-    timer.start();
+  for (size_t i = 0; i < read_files.size(); i++) {
+    std::string fraction_string = std::to_string(i + 1) + "/" + std::to_string(read_files.size());
+    timer.start("[" + fraction_string + "] processing " + read_files[i]);
     const auto seq_reader_flag = get_seq_reader_flag(long_mode);
-    btllib::SeqReader seq_reader(file, seq_reader_flag);
+    btllib::SeqReader seq_reader(read_files[i], seq_reader_flag);
 #pragma omp parallel shared(seq_reader)
     for (const auto& record : seq_reader) {
       bf.insert(record.seq);
     }
     timer.stop();
-    std::cout << "done (" << timer.to_string() << ")" << std::endl;
   }
 }
 
@@ -83,25 +81,39 @@ int
 main(const argparse::ArgumentParser& args)
 {
   const auto num_threads = args.get<unsigned>("-t");
+  omp_set_num_threads(num_threads);
+  std::cout << "[-t] thread limit set to " << num_threads << std::endl;
+  const auto num_hashes = args.get<unsigned>("-h");
+  std::cout << "[-h] using " << num_hashes << " hash functions" << std::endl;
+  const auto long_mode = args.get<bool>("--long");
+  std::cout << "[--long] " << (long_mode ? "long" : "short") << " read data" << std::endl;
   const auto read_files = args.get<std::vector<std::string>>("reads");
   const auto out_cbf_size = args.get<size_t>("-b");
   const auto out_path = args.get("-o");
-  const auto num_hashes = args.get<unsigned>("-h");
-  const auto long_mode = args.get<bool>("--long");
-  omp_set_num_threads(num_threads);
-  std::cout << "[-t] thread limit set to " << num_threads << std::endl;
-  std::cout << "[--long] " << (long_mode ? "long" : "short") << " read data" << std::endl;
+  Timer timer;
   if (args.is_used("-k")) {
     const auto kmer_length = args.get<unsigned>("-k");
+    std::cout << "[-k] counting all " << kmer_length << "-mers" << std::endl;
+    timer.start("[-b] initializing CBF (" + std::to_string(out_cbf_size) + " bytes)");
     btllib::KmerCountingBloomFilter8 cbf(out_cbf_size, num_hashes, kmer_length);
+    timer.stop();
     insert_all<btllib::KmerCountingBloomFilter8>(read_files, cbf, long_mode);
+    timer.start("[-o] saving to " + out_path);
     cbf.save(out_path);
+    timer.stop();
   } else if (args.is_used("-s")) {
     const auto seeds_path = args.get<std::string>("-s");
     const auto seeds = read_file_lines(seeds_path);
+    for (size_t i = 0; i < seeds.size(); i++) {
+      std::cout << "[-s] seed " << i + 1 << ": " << seeds[i] << std::endl;
+    }
+    timer.start("[-b] initializing CBF (" + std::to_string(out_cbf_size) + " bytes)");
     SeedCountingBloomFilter cbf(out_cbf_size, num_hashes, seeds);
+    timer.stop();
     insert_all<SeedCountingBloomFilter>(read_files, cbf, long_mode);
+    timer.start("[-o] saving to " + out_path);
     cbf.save(out_path);
+    timer.stop();
   } else {
     std::cerr << "Need to specify at least one of -k or -s" << std::endl;
     std::cerr << args;
