@@ -350,7 +350,11 @@ get_intermediate_bf_sizes(unsigned cmin,
   }
 }
 
-int
+inline double get_cascade_fpr(double target_fpr) {
+  return 1 - std::cbrt(1 - target_fpr);
+}
+
+inline int
 main(const argparse::ArgumentParser& args)
 {
   unsigned kmer_length;
@@ -388,7 +392,10 @@ main(const argparse::ArgumentParser& args)
   }
 
   const auto target_fpr = args.get<float>("-e");
-  std::cout << "[-e] target false-positive rate: " << target_fpr << std::endl;
+  std::cout << "[-e] target output false-positive rate: " << target_fpr << std::endl;
+
+  const auto cascade_fpr = get_cascade_fpr(target_fpr);
+  std::cout << "bloom filter false positive rate: " << cascade_fpr << std::endl;
 
   const auto histogram_path = args.get("-f");
   const auto histogram = utils::read_ntcard_histogram(histogram_path);
@@ -408,14 +415,14 @@ main(const argparse::ArgumentParser& args)
     num_hashes = get_num_hashes(num_elements, out_size);
   } else {
     num_hashes = 3;
-    out_size = get_bf_size(num_elements, target_fpr, num_hashes) / (counts ? 1UL : 8UL);
+    out_size = get_bf_size(num_elements, cascade_fpr, num_hashes) / (counts ? 1UL : 8UL);
     const auto num_excludes = histogram[1] - num_elements;
-    excludes_size = cmax < 255 && !counts ? get_bf_size(num_excludes, target_fpr, num_hashes) : 0;
+    excludes_size = cmax < 255 && !counts ? get_bf_size(num_excludes, cascade_fpr, num_hashes) : 0;
   }
   std::cout << "number of hashes per " << element_name << ": " << num_hashes << std::endl;
 
   size_t bf_size, cbf_size;
-  get_intermediate_bf_sizes(cmin, cmax, histogram, target_fpr, num_hashes, bf_size, cbf_size);
+  get_intermediate_bf_sizes(cmin, cmax, histogram, cascade_fpr, num_hashes, bf_size, cbf_size);
 
   size_t ram_usage = bf_size + cbf_size + out_size + excludes_size;
   std::cout << "estimated memory usage: " << utils::comma_sep(ram_usage) << " bytes" << std::endl;
