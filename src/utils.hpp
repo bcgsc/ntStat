@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+namespace utils {
+
 inline std::vector<std::string>
 read_file_lines(const std::string& path)
 {
@@ -34,6 +36,14 @@ get_seq_reader_flag(bool long_mode)
     return btllib::SeqReader::Flag::LONG_MODE;
   } else {
     return btllib::SeqReader::Flag::SHORT_MODE;
+  }
+}
+
+void
+print_seeds_list(const std::vector<std::string>& seeds)
+{
+  for (size_t i = 0; i < seeds.size(); i++) {
+    std::cout << "[-s] seed " << i + 1 << ": " << seeds[i] << std::endl;
   }
 }
 
@@ -71,3 +81,5 @@ public:
     return elapsed.count();
   }
 };
+
+}

@@ -63,11 +63,11 @@ template<class BloomFilter>
 inline void
 insert_all(const std::vector<std::string>& read_files, BloomFilter& bf, bool long_mode)
 {
-  Timer timer;
+  utils::Timer timer;
   for (size_t i = 0; i < read_files.size(); i++) {
     std::string fraction_string = std::to_string(i + 1) + "/" + std::to_string(read_files.size());
     timer.start("[" + fraction_string + "] processing " + read_files[i]);
-    const auto seq_reader_flag = get_seq_reader_flag(long_mode);
+    const auto seq_reader_flag = utils::get_seq_reader_flag(long_mode);
     btllib::SeqReader seq_reader(read_files[i], seq_reader_flag);
 #pragma omp parallel shared(seq_reader)
     for (const auto& record : seq_reader) {
@@ -98,7 +98,7 @@ main(const argparse::ArgumentParser& args)
   std::cout << "[-t] thread limit set to " << num_threads << std::endl;
   std::cout << "[-h] using " << num_hashes << " hash functions" << std::endl;
   std::cout << "[--long] " << (long_mode ? "long" : "short") << " read data" << std::endl;
-  Timer timer;
+  utils::Timer timer;
   if (args.is_used("-k")) {
     const auto kmer_length = args.get<unsigned>("-k");
     std::cout << "[-k] counting all " << kmer_length << "-mers" << std::endl;
@@ -111,7 +111,7 @@ main(const argparse::ArgumentParser& args)
     timer.stop();
   } else if (args.is_used("-s")) {
     const auto seeds_path = args.get<std::string>("-s");
-    const auto seeds = read_file_lines(seeds_path);
+    const auto seeds = utils::read_file_lines(seeds_path);
     print_seeds(seeds);
     timer.start("[-b] initializing CBF (" + std::to_string(out_cbf_size) + " bytes)");
     SeedCountingBloomFilter cbf(out_cbf_size, num_hashes, seeds);

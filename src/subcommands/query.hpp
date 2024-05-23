@@ -33,7 +33,7 @@ query(const BloomFilter& bf,
       bool distinct,
       const std::string& out_path)
 {
-  Timer timer;
+  utils::Timer timer;
   timer.start("performing queries");
   btllib::BloomFilter all(distinct ? bf.get_bytes() : 1, bf.get_hash_num());
   std::ofstream out_file(out_path);
@@ -60,7 +60,7 @@ main(const argparse::ArgumentParser& args)
   const auto distinct = args.get<bool>("--distinct");
   const auto files = args.get<std::vector<std::string>>("query");
   const auto out_path = args.get("-o");
-  Timer timer;
+  utils::Timer timer;
   if (btllib::KmerBloomFilter::is_bloom_file(bf_path)) {
     timer.start("[-b] loading k-mer bloom filter from " + bf_path);
     btllib::KmerBloomFilter bf(bf_path);
