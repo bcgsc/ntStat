@@ -393,9 +393,12 @@ main(const argparse::ArgumentParser& args)
   const auto histogram_path = args.get("-f");
   const auto histogram = utils::read_ntcard_histogram(histogram_path);
   const auto num_elements = get_num_elements(cmin, histogram, seeds.size());
-  std::cout << "total number of " << element_name << "s: " << histogram[0] << std::endl;
-  std::cout << "number of distinct " << element_name << "s: " << histogram[1] << std::endl;
-  std::cout << "number of unique filtered " << element_name << "s: " << num_elements << std::endl;
+  std::cout << "total number of " << element_name << "s: ";
+  std::cout << utils::comma_sep(histogram[0]) << std::endl;
+  std::cout << "number of distinct " << element_name << "s: ";
+  std::cout << utils::comma_sep(histogram[1]) << std::endl;
+  std::cout << "number of unique filtered " << element_name << "s: ";
+  std::cout << utils::comma_sep(num_elements) << std::endl;
 
   size_t out_size, excludes_size;
   unsigned num_hashes;
