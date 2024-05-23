@@ -47,6 +47,32 @@ print_seeds_list(const std::vector<std::string>& seeds)
   }
 }
 
+std::vector<uint64_t>
+read_ntcard_histogram(const std::string& path)
+{
+  std::vector<uint64_t> hist;
+  std::ifstream hist_file(path);
+  std::string freq;
+  uint64_t value;
+  while (hist_file >> freq >> value) {
+    hist.push_back(value);
+  }
+  return hist;
+}
+
+template<typename T>
+inline std::string
+comma_sep(T val)
+{
+  std::string val_str = std::to_string(val);
+  size_t i = val_str.size() % 3;
+  std::string result = i > 0 ? val_str.substr(0, i) + "," : "";
+  for (; i + 3 <= val_str.size(); i += 3) {
+    result += val_str.substr(i, 3) + ",";
+  }
+  return result.substr(0, result.size() - 1);
+}
+
 class Timer
 {
 private:

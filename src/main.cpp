@@ -46,6 +46,6 @@ main(int argc, char* argv[])
 {
   const auto& subcommand = get_subcommand(argc, argv);
   std::cout << LOGO << std::endl;
-  std::cout << "v" << VERSION << std::endl;
+  std::cout << "version " << VERSION << std::endl;
   return subcommand.second(*subcommand.first);
 }

@@ -6,6 +6,7 @@
 #include <btllib/seq_reader.hpp>
 #include <cstdint>
 #include <filesystem>
+#include <math.h>
 #include <omp.h>
 
 #include "utils.hpp"
@@ -15,12 +16,15 @@ namespace filter {
 argparse::ArgumentParser*
 get_argument_parser()
 {
-  const auto no_args = argparse::default_arguments::none;
-  argparse::ArgumentParser* parser = new argparse::ArgumentParser("filter", "", no_args);
+  argparse::ArgumentParser* parser = new argparse::ArgumentParser("filter", "");
   parser->add_argument("-k").help("k-mer length").scan<'u', unsigned>();
-  parser->add_argument("-s").help("path to spaced seeds file (one per line)");
-  parser->add_argument("-t").help("number of threads").default_value(1U).scan<'u', unsigned>();
-  parser->add_argument("-b").help("output BF/CBF size (bytes)").scan<'u', size_t>().required();
+  parser->add_argument("-s").help("path to spaced seeds file (one per line, if -k not specified)");
+  parser->add_argument("-f").help("path to k-mer spectrum file (from ntCard)").required();
+  parser->add_argument("-e")
+    .help("target output false positive rate")
+    .default_value(0.0001F)
+    .scan<'g', float>();
+  parser->add_argument("-b").help("output BF/CBF size (bytes)").scan<'u', size_t>();
   parser->add_argument("-cmin")
     .help("minimum count threshold (>=1)")
     .default_value(1U)
@@ -33,20 +37,17 @@ get_argument_parser()
     .help("output counts (requires ~8x RAM for CBF)")
     .default_value(false)
     .implicit_value(true);
-  parser->add_argument("-h", "--num-hashes")
-    .help("number of hashes to generate per k-mer/spaced seed")
-    .default_value(3U)
-    .scan<'u', unsigned>();
   parser->add_argument("--long")
     .help("optimize for long read data")
     .default_value(false)
     .implicit_value(true);
+  parser->add_argument("-t").help("number of threads").default_value(1U).scan<'u', unsigned>();
   parser->add_argument("-o").help("path to store output file").required();
   parser->add_argument("reads").help("path to sequencing data file(s)").required().remaining();
   return parser;
 }
 
-bool
+inline bool
 validate_thresholds(unsigned cmin, unsigned cmax)
 {
   if (cmin == 0) {
@@ -66,7 +67,7 @@ validate_thresholds(unsigned cmin, unsigned cmax)
 
 /* if cmin > 2 and cmax < 255 */
 template<class HashFunction, class OutputBloomFilter>
-void
+inline void
 process_read(HashFunction& hash_fn,
              OutputBloomFilter& out,
              unsigned min_count,
@@ -91,7 +92,7 @@ process_read(HashFunction& hash_fn,
 
 /* if cmin == 1 and cmax < 255 */
 template<class HashFunction, class OutputBloomFilter>
-void
+inline void
 process_read(HashFunction& hash_fn,
              OutputBloomFilter& out,
              unsigned max_count,
@@ -109,7 +110,7 @@ process_read(HashFunction& hash_fn,
 
 /* if cmin == 1 and cmax == 255 */
 template<class HashFunction, class OutputBloomFilter>
-void
+inline void
 process_read(HashFunction& hash_fn, OutputBloomFilter& out)
 {
   while (hash_fn.roll()) {
@@ -119,7 +120,7 @@ process_read(HashFunction& hash_fn, OutputBloomFilter& out)
 
 /* if cmin == 2 and cmax == 255 */
 template<class HashFunction, class OutputBloomFilter>
-void
+inline void
 process_read(HashFunction& hash_fn, OutputBloomFilter& out, btllib::BloomFilter& distinct)
 {
   while (hash_fn.roll()) {
@@ -131,7 +132,7 @@ process_read(HashFunction& hash_fn, OutputBloomFilter& out, btllib::BloomFilter&
 
 /* if cmin > 2 and cmax == 255 */
 template<class HashFunction, class OutputBloomFilter>
-void
+inline void
 process_read(HashFunction& hash_fn,
              OutputBloomFilter& out,
              unsigned min_count,
@@ -198,26 +199,37 @@ process_seeds(const std::vector<std::string>& read_files,
 }
 
 template<class OutputBloomFilter>
-void
+inline void
 process(const std::vector<std::string>& read_files,
         bool long_mode,
         unsigned kmer_length,
         const std::vector<std::string>& seeds,
         unsigned cmin,
         unsigned cmax,
+        size_t bf_size,
+        size_t cbf_size,
         OutputBloomFilter& out)
 {
+  utils::Timer timer;
   const bool using_kmers = seeds.size() == 0;
+  const auto bf_size_str = utils::comma_sep(bf_size) + " bytes";
+  const auto cbf_size_str = utils::comma_sep(cbf_size) + " bytes";
   if (cmin > 2 && cmax < 255) {
-    btllib::BloomFilter bf(1024, out.get_hash_num());
-    btllib::CountingBloomFilter8 cbf(1024, out.get_hash_num());
+    timer.start("initializing distincts bloom filter (" + bf_size_str + ")");
+    btllib::BloomFilter bf(bf_size, out.get_hash_num());
+    timer.stop();
+    timer.start("initializing intermediate counting bloom filter (" + cbf_size_str + ")");
+    btllib::CountingBloomFilter8 cbf(cbf_size, out.get_hash_num());
+    timer.stop();
     if (using_kmers) {
       process_kmers(read_files, long_mode, kmer_length, out, cmin, cmax, bf, cbf);
     } else {
       process_seeds(read_files, long_mode, seeds, out, cmin, cmax, bf, cbf);
     }
   } else if (cmin == 1 && cmax < 255) {
-    btllib::CountingBloomFilter8 cbf(1024, out.get_hash_num());
+    timer.start("initializing intermediate counting bloom filter (" + cbf_size_str + ")");
+    btllib::CountingBloomFilter8 cbf(cbf_size, out.get_hash_num());
+    timer.stop();
     if (using_kmers) {
       process_kmers(read_files, long_mode, kmer_length, out, cmax, cbf);
     } else {
@@ -230,15 +242,21 @@ process(const std::vector<std::string>& read_files,
       process_seeds(read_files, long_mode, seeds, out);
     }
   } else if (cmin == 2 && cmax == 255) {
-    btllib::BloomFilter bf(1024, out.get_hash_num());
+    timer.start("initializing distincts bloom filter (" + bf_size_str + ")");
+    btllib::BloomFilter bf(bf_size, out.get_hash_num());
+    timer.stop();
     if (using_kmers) {
       process_kmers(read_files, long_mode, kmer_length, out, bf);
     } else {
       process_seeds(read_files, long_mode, seeds, out, bf);
     }
   } else if (cmin > 2 and cmax == 255) {
-    btllib::BloomFilter bf(1024, out.get_hash_num());
-    btllib::CountingBloomFilter8 cbf(1024, out.get_hash_num());
+    timer.start("initializing distincts bloom filter (" + bf_size_str + ")");
+    btllib::BloomFilter bf(bf_size, out.get_hash_num());
+    timer.stop();
+    timer.start("initializing intermediate counting bloom filter (" + cbf_size_str + ")");
+    btllib::CountingBloomFilter8 cbf(cbf_size, out.get_hash_num());
+    timer.stop();
     if (using_kmers) {
       process_kmers(read_files, long_mode, kmer_length, out, cmin, bf, cbf);
     } else {
@@ -248,9 +266,10 @@ process(const std::vector<std::string>& read_files,
 }
 
 template<class BloomFilter>
-void
+inline void
 save(BloomFilter& bf, const std::string& path)
 {
+  std::cout << "actual output false positive rate: " << bf.get_fpr() << std::endl;
   utils::Timer timer;
   timer.start("[-o] saving to " + path);
   bf.save(path);
@@ -281,82 +300,168 @@ public:
 
   unsigned get_hash_num() { return out_include.get_hash_num(); }
 
+  double get_fpr() { return out_include.get_fpr(); }
+
 private:
   BloomFilter& out_include;
   BloomFilter& out_exclude;
 };
 
+inline unsigned
+get_num_hashes(double num_elements, double bf_size)
+{
+  return num_elements * log(2) / bf_size;
+}
+
+inline size_t
+get_bf_size(double num_elements, double fpr, double num_hashes)
+{
+  double r = -num_hashes / log(1.0 - exp(log(fpr) / num_hashes));
+  return ceil(num_elements * r);
+}
+
+inline uint64_t
+get_num_elements(unsigned cmin, const std::vector<uint64_t> histogram, size_t num_seeds)
+{
+  uint64_t num_elements = histogram[1];
+  for (unsigned i = 2; i < cmin + 1; i++) {
+    num_elements -= histogram[i];
+  }
+  return num_elements * std::max(1UL, num_seeds);
+}
+
+inline void
+get_intermediate_bf_sizes(unsigned cmin,
+                          unsigned cmax,
+                          const std::vector<u_int64_t>& histogram,
+                          double out_fpr,
+                          unsigned num_hashes,
+                          size_t& bf_size,
+                          size_t& cbf_size)
+{
+  double fpr = sqrt(out_fpr);
+  bf_size = cmin > 1 ? get_bf_size(histogram[1], fpr, num_hashes) / 8 : 0;
+  if (cmin == 1 && cmax < 255) {
+    cbf_size = get_bf_size(histogram[1], fpr, num_hashes);
+  } else if (cmin > 2 || cmax < 255) {
+    cbf_size = get_bf_size(histogram[1] - histogram[2], fpr, num_hashes);
+  } else {
+    cbf_size = 0;
+  }
+}
+
 int
 main(const argparse::ArgumentParser& args)
 {
-  const auto num_threads = args.get<unsigned>("-t");
-  const auto read_files = args.get<std::vector<std::string>>("reads");
-  const auto out_size = args.get<size_t>("-b");
-  const auto out_path = args.get("-o");
-  const auto num_hashes = args.get<unsigned>("-h");
-  const auto long_mode = args.get<bool>("--long");
-  const auto cmin = args.get<unsigned>("-cmin");
-  const auto cmax = args.get<unsigned>("-cmax");
-  const auto counts = args.get<bool>("--counts");
-
   unsigned kmer_length;
   std::vector<std::string> seeds;
+  std::string element_name;
   if (args.is_used("-s")) {
+    element_name = "spaced seed";
     const auto seeds_path = args.get("-s");
     seeds = utils::read_file_lines(seeds_path);
     std::cout << "[-s] counting spaced seeds" << std::endl;
     utils::print_seeds_list(seeds);
     kmer_length = seeds[0].size();
   } else if (args.is_used("-k")) {
+    element_name = "k-mer";
     kmer_length = args.get<unsigned>("-k");
     std::cout << "[-k] counting " << kmer_length << "-mers" << std::endl;
   }
+
+  const auto cmin = args.get<unsigned>("-cmin");
+  std::cout << "[-cmin] minimum " << element_name << " count: " << cmin << std::endl;
+  const auto cmax = args.get<unsigned>("-cmax");
+  std::cout << "[-cmax] maximum " << element_name << " count: " << cmax << std::endl;
+  const auto counts = args.get<bool>("--counts");
+
+  omp_set_num_threads(args.get<unsigned>("-t"));
+  std::cout << "[-t] thread limit set to " << omp_get_num_threads() << std::endl;
+
+  const auto long_mode = args.get<bool>("--long");
+  std::cout << "[--long] using " << (long_mode ? "long" : "short") << " read data" << std::endl;
 
   if (!validate_thresholds(cmin, cmax)) {
     std::cout << args;
     return EXIT_FAILURE;
   }
 
-  omp_set_num_threads(num_threads);
-  std::cout << "[-t] thread limit set to " << num_threads << std::endl;
+  const auto target_fpr = args.get<float>("-e");
+  std::cout << "[-e] target false-positive rate: " << target_fpr << std::endl;
 
-  std::cout << "[--long] " << (long_mode ? "long" : "short") << " read data" << std::endl;
+  const auto histogram_path = args.get("-f");
+  const auto histogram = utils::read_ntcard_histogram(histogram_path);
+  const auto num_elements = get_num_elements(cmin, histogram, seeds.size());
+  std::cout << "total number of " << element_name << "s: " << histogram[0] << std::endl;
+  std::cout << "number of distinct " << element_name << "s: " << histogram[1] << std::endl;
+  std::cout << "number of unique filtered " << element_name << "s: " << num_elements << std::endl;
+
+  size_t out_size, excludes_size;
+  unsigned num_hashes;
+  if (args.is_used("-b")) {
+    out_size = args.get<size_t>("-b");
+    excludes_size = cmax < 255 && !counts ? out_size : 0;
+    num_hashes = get_num_hashes(num_elements, out_size);
+  } else {
+    num_hashes = 3;
+    out_size = get_bf_size(num_elements, target_fpr, num_hashes) / (counts ? 1UL : 8UL);
+    const auto num_excludes = histogram[1] - num_elements;
+    excludes_size = cmax < 255 && !counts ? get_bf_size(num_excludes, target_fpr, num_hashes) : 0;
+  }
+  std::cout << "number of hashes per " << element_name << ": " << num_hashes << std::endl;
+
+  size_t bf_size, cbf_size;
+  get_intermediate_bf_sizes(cmin, cmax, histogram, target_fpr, num_hashes, bf_size, cbf_size);
+
+  size_t ram_usage = bf_size + cbf_size + out_size + excludes_size;
+  std::cout << "estimated memory usage: " << utils::comma_sep(ram_usage) << " bytes" << std::endl;
+
+  const auto read_files = args.get<std::vector<std::string>>("reads");
+  const auto out_path = args.get("-o");
 
   utils::Timer timer;
 
+  const auto out_size_str = utils::comma_sep(out_size) + " bytes";
+  const auto excludes_size_str = utils::comma_sep(excludes_size) + " bytes";
   if (args.is_used("-k") && counts) {
-    timer.start("initializing output btllib::KmerCountingBloomFilter8");
+    timer.start("initializing output btllib::KmerCountingBloomFilter8 (" + out_size_str + ")");
     btllib::KmerCountingBloomFilter8 out(out_size, num_hashes, kmer_length);
     timer.stop();
-    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, out);
+    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else if (args.is_used("-k")) {
-    timer.start("initializing output btllib::KmerBloomFilter");
+    timer.start("initializing output btllib::KmerBloomFilter (" + out_size_str + ")");
     btllib::KmerBloomFilter out_include(out_size, num_hashes, kmer_length);
+    timer.stop();
+    timer.start("initializing excludes btllib::KmerBloomFilter (" + excludes_size_str + ")");
     btllib::KmerBloomFilter out_exclude(out_size, num_hashes, kmer_length);
+    timer.stop();
     BloomFilterWrapper<btllib::KmerBloomFilter> out(out_include, out_exclude);
     timer.stop();
-    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, out);
+    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else if (args.is_used("-s") && counts) {
-    timer.start("initializing output btllib::CountingBloomFilter8");
+    timer.start("initializing output btllib::CountingBloomFilter8 (" + out_size_str + ")");
     btllib::CountingBloomFilter8 out(out_size, num_hashes);
     timer.stop();
-    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, out);
+    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else if (args.is_used("-s")) {
-    timer.start("initializing output btllib::SeedBloomFilter");
+    timer.start("initializing output btllib::SeedBloomFilter for includes (" + out_size_str + ")");
     btllib::SeedBloomFilter out_include(out_size, kmer_length, seeds, num_hashes);
-    btllib::SeedBloomFilter out_exclude(out_size, kmer_length, seeds, num_hashes);
-    BloomFilterWrapper<btllib::SeedBloomFilter> out(out_include, out_exclude);
     timer.stop();
-    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, out);
+    timer.start("initializing excludes btllib::SeedBloomFilter (" + excludes_size_str + ")");
+    btllib::SeedBloomFilter out_exclude(out_size, kmer_length, seeds, num_hashes);
+    timer.stop();
+    BloomFilterWrapper<btllib::SeedBloomFilter> out(out_include, out_exclude);
+    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
+  } else {
+    std::cerr << "need to specify at least one of -k or -s" << std::endl;
+    std::cerr << args;
+    return EXIT_FAILURE;
   }
-
-  std::cerr << "need to specify at least one of -k or -s" << std::endl;
-  std::cerr << args;
-  return EXIT_FAILURE;
+  return EXIT_SUCCESS;
 }
 
 }
