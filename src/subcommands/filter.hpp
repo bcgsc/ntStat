@@ -49,17 +49,12 @@ get_argument_parser()
 bool
 validate_thresholds(unsigned cmin, unsigned cmax)
 {
-  if (cmin == 1 && cmax == 255) {
-    std::cerr << "need to specify cmin>1 or cmax<255" << std::endl;
-    std::cerr << "use 'ntstat count' if not applying any filters" << std::endl;
-    return false;
-  }
   if (cmin == 0) {
-    std::cerr << "cmin=0 is invalid" << std::endl;
+    std::cerr << "cmin should be greater than 0" << std::endl;
     return false;
   }
   if (cmax > 255) {
-    std::cerr << "cmax=" << cmax << "is invalid" << std::endl;
+    std::cerr << "cmax should be less than 256" << std::endl;
     return false;
   }
   if (cmin >= cmax) {
@@ -109,6 +104,16 @@ process_read(HashFunction& hash_fn,
     } else if (count == max_count) {
       out.clear(hash_fn.hashes());
     }
+  }
+}
+
+/* if cmin == 1 and cmax == 255 */
+template<class HashFunction, class OutputBloomFilter>
+void
+process_read(HashFunction& hash_fn, OutputBloomFilter& out)
+{
+  while (hash_fn.roll()) {
+    out.insert(hash_fn.hashes());
   }
 }
 
@@ -217,6 +222,12 @@ process(const std::vector<std::string>& read_files,
       process_kmers(read_files, long_mode, kmer_length, out, cmax, cbf);
     } else {
       process_seeds(read_files, long_mode, seeds, out, cmax, cbf);
+    }
+  } else if (cmin == 1 && cmax == 255) {
+    if (using_kmers) {
+      process_kmers(read_files, long_mode, kmer_length, out);
+    } else {
+      process_seeds(read_files, long_mode, seeds, out);
     }
   } else if (cmin == 2 && cmax == 255) {
     btllib::BloomFilter bf(1024, out.get_hash_num());
