@@ -375,8 +375,9 @@ main(const argparse::ArgumentParser& args)
   std::cout << "[-cmax] maximum " << element_name << " count: " << cmax << std::endl;
   const auto counts = args.get<bool>("--counts");
 
-  omp_set_num_threads(args.get<unsigned>("-t"));
-  std::cout << "[-t] thread limit set to " << omp_get_num_threads() << std::endl;
+  const auto num_threads = args.get<unsigned>("-t");
+  omp_set_num_threads(num_threads);
+  std::cout << "[-t] thread limit set to " << num_threads << std::endl;
 
   const auto long_mode = args.get<bool>("--long");
   std::cout << "[--long] using " << (long_mode ? "long" : "short") << " read data" << std::endl;
