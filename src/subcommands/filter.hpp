@@ -332,7 +332,7 @@ get_bf_size(double num_elements, double fpr, double num_hashes)
 }
 
 inline uint64_t
-get_num_elements(unsigned cmin, const std::vector<uint64_t> histogram, size_t num_seeds)
+get_num_elements(unsigned cmin, const std::vector<uint64_t>& histogram, size_t num_seeds)
 {
   uint64_t num_elements = histogram[1];
   for (unsigned i = 2; i < cmin + 1; i++) {
