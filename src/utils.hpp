@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <sstream>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -71,6 +72,21 @@ comma_sep(T val)
     result += val_str.substr(i, 3) + ",";
   }
   return result.substr(0, result.size() - 1);
+}
+
+inline std::string
+human_readable(size_t bytes)
+{
+  unsigned o = 0;
+  std::stringstream ss;
+  double mantissa = bytes;
+  while (mantissa >= 1024) {
+    mantissa /= 1024.;
+    ++o;
+  }
+  ss << std::ceil(mantissa * 10.) / 10. << "BKMGTPE"[o];
+  ss << (o > 0 ? "B" : "");
+  return ss.str();
 }
 
 class Timer
