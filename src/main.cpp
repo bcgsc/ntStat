@@ -3,6 +3,7 @@
 #include <map>
 
 #include "subcommands/filter.hpp"
+#include "subcommands/hist.hpp"
 #include "subcommands/query.hpp"
 #include "version.hpp"
 
@@ -16,6 +17,7 @@ get_subcommand(int argc, char* argv[])
   std::map<argparse::ArgumentParser*, subcommand_function> parser_functions = {
     { query::get_argument_parser(), query::main },
     { filter::get_argument_parser(), filter::main },
+    { hist::get_argument_parser(), hist::main },
   };
   argparse::ArgumentParser parser("ntStat", VERSION);
   for (const auto& item : parser_functions) {
