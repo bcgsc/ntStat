@@ -1,0 +1,9 @@
+name: ntstat
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - compilers
+  - btllib>=1.7.2
+  - cpp-argparse
+  - cpp-tabulate
