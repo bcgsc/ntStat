@@ -24,6 +24,7 @@ compiler = meson.get_compiler('cpp')
 
 dependencies = [
     dependency('argparse'),
+    dependency('tabulate'),
     dependency('openmp'),
     compiler.find_library('btllib'),
 ]

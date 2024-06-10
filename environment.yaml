@@ -4,6 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - compilers
+  - meson
   - btllib>=1.7.2
   - cpp-argparse
   - cpp-tabulate

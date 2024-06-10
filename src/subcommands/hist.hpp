@@ -1,6 +1,7 @@
 #pragma once
 
 #include <argparse/argparse.hpp>
+#include <tabulate/table.hpp>
 #include <vector>
 
 #include "utils.hpp"
@@ -29,20 +30,35 @@ get_first_minima(const histogram_t histogram)
 }
 
 unsigned
-get_solid_threshold(const std::vector<uint64_t>& histogram)
+get_solid_threshold(const histogram_t& histogram)
 {
   return get_first_minima(histogram);
+}
+
+unsigned
+get_repeat_threshold(const histogram_t& histogram)
+{
+  return (float)get_first_minima(histogram) * 1.75;
 }
 
 inline int
 main(const argparse::ArgumentParser& args)
 {
   utils::Timer timer;
-  std::cout << "loading k-mer spectrum file..." << std::flush;
+  std::cout << "loading k-mer spectrum file... " << std::flush;
   const auto histogram = utils::read_ntcard_histogram(args.get("histogram"));
   std::cout << "done" << std::endl;
-  std::cout << "first minima = " << get_first_minima(histogram) << std::endl;
-  std::cout << "solid k-mers threshold = " << get_solid_threshold(histogram) << std::endl;
+  std::cout << std::endl;
+  tabulate::Table stats;
+  stats.add_row({ "STATISTIC", "VALUE" });
+  stats.add_row({ "first minima", std::to_string(get_first_minima(histogram)) });
+  stats.add_row({ "solid k-mers threshold", std::to_string(get_solid_threshold(histogram)) });
+  stats.add_row({ "repeat k-mers threshold", std::to_string(get_repeat_threshold(histogram)) });
+  stats.column(1).format().font_align(tabulate::FontAlign::right);
+  stats[0][1].format().font_align(tabulate::FontAlign::center);
+  stats[0].format().border_top("-").border_bottom("-").border_left("|").border_right("|").corner(
+    "+");
+  std::cout << stats << std::endl;
   return EXIT_SUCCESS;
 }
 
