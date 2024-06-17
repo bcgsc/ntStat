@@ -14,7 +14,6 @@ argparse::ArgumentParser*
 get_argument_parser()
 {
   argparse::ArgumentParser* parser = new argparse::ArgumentParser("hist", "");
-  parser->add_argument("-k").help("k-mer length").scan<'u', unsigned>().required();
   parser->add_argument("histogram").help("path to k-mer spectrum file (from ntCard)").required();
   return parser;
 }
@@ -26,7 +25,7 @@ get_first_minima(const histogram_t histogram)
   while (i <= (int)histogram.size() - 2 && histogram[i] > histogram[i + 1]) {
     i++;
   }
-  return i;
+  return i - 1;
 }
 
 unsigned
