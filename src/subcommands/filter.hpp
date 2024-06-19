@@ -318,19 +318,6 @@ private:
   BloomFilter& out_exclude;
 };
 
-inline unsigned
-get_num_hashes(double num_elements, double bf_size)
-{
-  return num_elements * log(2) / bf_size;
-}
-
-inline size_t
-get_bf_size(double num_elements, double fpr, double num_hashes)
-{
-  double r = -num_hashes / log(1.0 - exp(log(fpr) / num_hashes));
-  return ceil(num_elements * r);
-}
-
 inline uint64_t
 get_num_elements(unsigned cmin, const std::vector<uint64_t>& histogram, size_t num_seeds)
 {
@@ -351,11 +338,11 @@ get_intermediate_bf_sizes(unsigned cmin,
                           size_t& cbf_size)
 {
   double fpr = sqrt(out_fpr);
-  bf_size = cmin > 1 ? get_bf_size(histogram[1], fpr, num_hashes) / 8 : 0;
+  bf_size = cmin > 1 ? utils::get_bf_size(histogram[1], fpr, num_hashes) / 8 : 0;
   if (cmin == 1 && cmax < 255) {
-    cbf_size = get_bf_size(histogram[1], fpr, num_hashes);
+    cbf_size = utils::get_bf_size(histogram[1], fpr, num_hashes);
   } else if (cmin > 2 || cmax < 255) {
-    cbf_size = get_bf_size(histogram[1] - histogram[2], fpr, num_hashes);
+    cbf_size = utils::get_bf_size(histogram[1] - histogram[2], fpr, num_hashes);
   } else {
     cbf_size = 0;
   }
@@ -435,12 +422,13 @@ main(const argparse::ArgumentParser& args)
   if (args.is_used("-b")) {
     out_size = args.get<size_t>("-b");
     excludes_size = cmax < 255 && !counts ? out_size : 0;
-    num_hashes = get_num_hashes(num_elements, out_size);
+    num_hashes = utils::get_num_hashes(num_elements, out_size);
   } else {
     num_hashes = 3;
-    out_size = get_bf_size(num_elements, cascade_fpr, num_hashes) / (counts ? 1UL : 8UL);
+    out_size = utils::get_bf_size(num_elements, cascade_fpr, num_hashes) / (counts ? 1UL : 8UL);
     const auto num_excludes = histogram[1] - num_elements;
-    excludes_size = cmax < 255 && !counts ? get_bf_size(num_excludes, cascade_fpr, num_hashes) : 0;
+    excludes_size =
+      cmax < 255 && !counts ? utils::get_bf_size(num_excludes, cascade_fpr, num_hashes) : 0;
   }
   get_intermediate_bf_sizes(cmin, cmax, histogram, cascade_fpr, num_hashes, bf_size, cbf_size);
 
