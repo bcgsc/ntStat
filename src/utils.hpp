@@ -24,10 +24,16 @@ read_file_lines(const std::string& path)
 }
 
 inline size_t
-get_bf_size(double num_elements, double num_hashes, int num_seeds, double fpr)
+get_bf_size(double num_elements, double fpr, double num_hashes)
 {
   double r = -num_hashes / log(1.0 - exp(log(fpr) / num_hashes));
-  return ceil(num_elements * std::max(num_seeds, 1) * r);
+  return ceil(num_elements * r);
+}
+
+inline unsigned
+get_num_hashes(double num_elements, double bf_size)
+{
+  return num_elements * log(2) / bf_size;
 }
 
 inline unsigned

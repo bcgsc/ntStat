@@ -29,6 +29,11 @@ dependencies = [
     compiler.find_library('btllib'),
 ]
 
+include_directories = [
+    'src',
+    'vendor/indicators/include/',
+]
+
 sources = run_command(
     'scripts/list_sources.sh',
     check: true,
@@ -38,6 +43,6 @@ executable(
     'ntstat',
     ['src/main.cpp'] + sources,
     dependencies: dependencies,
-    include_directories: 'src',
+    include_directories: include_directories,
     install: true,
 )
