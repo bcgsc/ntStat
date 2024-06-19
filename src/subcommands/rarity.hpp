@@ -34,7 +34,7 @@ inline void
 process_kmers(const std::vector<std::string>& read_files,
               bool long_mode,
               unsigned kmer_length,
-              size_t num_kmers,
+              size_t total_elements,
               size_t out_size,
               unsigned num_hashes,
               const std::string& out_prefix)
@@ -46,6 +46,7 @@ process_kmers(const std::vector<std::string>& read_files,
   timer.stop();
   const auto seq_reader_flag = utils::get_seq_reader_flag(long_mode);
   std::atomic<size_t> num_kmers_done{ 0 };
+  std::atomic<size_t> num_reads{ 0 };
   std::atomic<unsigned> percent_done{ 0 };
   indicators::BlockProgressBar bar{
     indicators::option::BarWidth{ 50 },
@@ -56,18 +57,20 @@ process_kmers(const std::vector<std::string>& read_files,
     btllib::SeqReader seq_reader(file, seq_reader_flag);
 #pragma omp parallel shared(seq_reader)
     for (const auto& record : seq_reader) {
+      ++num_reads;
       btllib::NtHash hash_fn(record.seq, num_hashes, kmer_length);
       process_read(record.seq.size(), hash_fn, counts, depths);
       num_kmers_done += record.seq.size() - kmer_length + 1;
 #pragma omp critical
-      if (num_kmers_done * 100 / num_kmers > percent_done) {
-        percent_done = num_kmers_done * 100 / num_kmers;
+      if (num_kmers_done * 100 / total_elements > percent_done) {
+        percent_done = num_kmers_done * 100 / total_elements;
         bar.set_progress(percent_done);
       }
     }
   }
   bar.set_progress(100);
   bar.mark_as_completed();
+  std::cout << "total number of reads: " << num_reads << std::endl;
   timer.start("saving output files");
   counts.save(out_prefix + "counts.cbf");
   depths.save(out_prefix + "depths.cbf");
@@ -78,7 +81,7 @@ inline void
 process_seeds(const std::vector<std::string>& read_files,
               bool long_mode,
               const std::vector<std::string>& seeds,
-              size_t num_kmers,
+              size_t total_elements,
               size_t out_size,
               unsigned num_hashes,
               const std::string& out_prefix)
@@ -90,6 +93,7 @@ process_seeds(const std::vector<std::string>& read_files,
   timer.stop();
   const auto seq_reader_flag = utils::get_seq_reader_flag(long_mode);
   std::atomic<size_t> num_kmers_done{ 0 };
+  std::atomic<size_t> num_reads{ 0 };
   std::atomic<unsigned> percent_done{ 0 };
   indicators::BlockProgressBar bar{
     indicators::option::BarWidth{ 50 },
@@ -100,13 +104,14 @@ process_seeds(const std::vector<std::string>& read_files,
     btllib::SeqReader seq_reader(file, seq_reader_flag);
 #pragma omp parallel shared(seq_reader)
     for (const auto& record : seq_reader) {
+      ++num_reads;
       for (const auto& seed : seeds) {
         btllib::SeedNtHash hash_fn(record.seq, { seed }, num_hashes, seed.size());
         process_read(record.seq.size(), hash_fn, counts, depths);
         num_kmers_done += record.seq.size() - seed.size() + 1;
 #pragma omp critical
-        if (num_kmers_done * 100 / num_kmers > percent_done) {
-          percent_done = num_kmers_done * 100 / num_kmers;
+        if (num_kmers_done * 100 / total_elements > percent_done) {
+          percent_done = num_kmers_done * 100 / total_elements;
           bar.set_progress(percent_done);
         }
       }
@@ -114,6 +119,7 @@ process_seeds(const std::vector<std::string>& read_files,
   }
   bar.set_progress(100);
   bar.mark_as_completed();
+  std::cout << "total number of reads: " << num_reads << std::endl;
   timer.start("saving output files");
   counts.save(out_prefix + "counts.cbf");
   depths.save(out_prefix + "depths.cbf");
@@ -203,7 +209,7 @@ main(const argparse::ArgumentParser& args)
     process_seeds(args.get<std::vector<std::string>>("reads"),
                   long_mode,
                   seeds,
-                  histogram[0],
+                  histogram[0] * seeds.size(),
                   out_size,
                   num_hashes,
                   args.get("-o"));
