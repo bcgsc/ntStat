@@ -63,7 +63,9 @@ Optional arguments:
 
 Calculate TF-IDF information from sequencing data. Two counting Bloom filters will be stored. One for *k*-mer/seed counts (TF) and other for depths (DF). The number of reads ($N$) will also be printed to stdout. To compute the TF-IDF of an element with $h$ as its hash array, use this formula:
 
-$ \text{TF-IDF}(h) = TF(h) * log \dfrac{D}{DF(h)} $
+$$ \text{TF-IDF}(h) = TF(h) * log \dfrac{N + 1}{DF(h) + 1} $$
+
+Note that the $+1$ in the $log$ operation is to prevent division by zero.
 
 ### Usage
 
