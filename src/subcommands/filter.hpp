@@ -6,6 +6,7 @@
 #include <btllib/seq_reader.hpp>
 #include <cstdint>
 #include <filesystem>
+#include <indicators/block_progress_bar.hpp>
 #include <math.h>
 #include <omp.h>
 #include <tabulate/table.hpp>
@@ -158,23 +159,36 @@ inline void
 process_kmers(const std::vector<std::string>& read_files,
               bool long_mode,
               unsigned kmer_length,
+              size_t num_kmers,
               OutputBloomFilter& out,
               ReadProcessorArgs&... args)
 {
-  std::cout << "counting and filtering k-mers:" << std::endl;
-  utils::Timer timer;
+  std::atomic<size_t> num_kmers_done{ 0 };
+  std::atomic<size_t> num_reads{ 0 };
+  std::atomic<unsigned> percent_done{ 0 };
+  indicators::BlockProgressBar bar{
+    indicators::option::BarWidth{ 30 },
+    indicators::option::ShowElapsedTime{ true },
+    indicators::option::ShowRemainingTime{ true },
+    indicators::option::PrefixText{ "processing " },
+  };
   const auto seq_reader_flag = utils::get_seq_reader_flag(long_mode);
   for (size_t i = 0; i < read_files.size(); i++) {
-    std::string pfx = " [" + std::to_string(i + 1) + "/" + std::to_string(read_files.size()) + "] ";
-    timer.start(pfx + "processing " + read_files[i]);
     btllib::SeqReader seq_reader(read_files[i], seq_reader_flag);
 #pragma omp parallel shared(seq_reader)
     for (const auto& record : seq_reader) {
       btllib::NtHash hash_fn(record.seq, out.get_hash_num(), kmer_length);
       process_read(hash_fn, out, args...);
+      num_kmers_done += record.seq.size() - kmer_length + 1;
+#pragma omp critical
+      if (num_kmers_done * 100 / num_kmers > percent_done) {
+        percent_done = num_kmers_done * 100 / num_kmers;
+        bar.set_progress(percent_done);
+      }
     }
-    timer.stop();
   }
+  bar.set_progress(100);
+  bar.mark_as_completed();
 }
 
 template<class OutputBloomFilter, typename... ReadProcessorArgs>
@@ -182,25 +196,39 @@ inline void
 process_seeds(const std::vector<std::string>& read_files,
               bool long_mode,
               const std::vector<std::string>& seeds,
+              size_t num_kmers,
               OutputBloomFilter& out,
               ReadProcessorArgs&... args)
 {
-  std::cout << "counting and filtering spaced seeds:" << std::endl;
-  utils::Timer timer;
+  size_t total_elements = num_kmers * seeds.size();
+  std::atomic<size_t> num_kmers_done{ 0 };
+  std::atomic<size_t> num_reads{ 0 };
+  std::atomic<unsigned> percent_done{ 0 };
+  indicators::BlockProgressBar bar{
+    indicators::option::BarWidth{ 30 },
+    indicators::option::ShowElapsedTime{ true },
+    indicators::option::ShowRemainingTime{ true },
+    indicators::option::PrefixText{ "processing " },
+  };
   const auto seq_reader_flag = utils::get_seq_reader_flag(long_mode);
   for (size_t i = 0; i < read_files.size(); i++) {
-    std::string pfx = " [" + std::to_string(i + 1) + "/" + std::to_string(read_files.size()) + "] ";
-    timer.start(pfx + "processing " + read_files[i]);
     btllib::SeqReader seq_reader(read_files[i], seq_reader_flag);
 #pragma omp parallel shared(seq_reader)
     for (const auto& record : seq_reader) {
       for (const auto& seed : seeds) {
         btllib::SeedNtHash hash_fn(record.seq, { seed }, out.get_hash_num(), seed.size());
         process_read(hash_fn, out, args...);
+        num_kmers_done += record.seq.size() - seed.size() + 1;
+#pragma omp critical
+        if (num_kmers_done * 100 / total_elements > percent_done) {
+          percent_done = num_kmers_done * 100 / total_elements;
+          bar.set_progress(percent_done);
+        }
       }
     }
-    timer.stop();
   }
+  bar.set_progress(100);
+  bar.mark_as_completed();
 }
 
 template<class OutputBloomFilter>
@@ -209,6 +237,7 @@ process(const std::vector<std::string>& read_files,
         bool long_mode,
         unsigned kmer_length,
         const std::vector<std::string>& seeds,
+        size_t total_num_kmers,
         unsigned cmin,
         unsigned cmax,
         size_t bf_size,
@@ -228,9 +257,9 @@ process(const std::vector<std::string>& read_files,
     timer.stop();
     std::cout << std::endl;
     if (using_kmers) {
-      process_kmers(read_files, long_mode, kmer_length, out, cmin, cmax, bf, cbf);
+      process_kmers(read_files, long_mode, kmer_length, total_num_kmers, out, cmin, cmax, bf, cbf);
     } else {
-      process_seeds(read_files, long_mode, seeds, out, cmin, cmax, bf, cbf);
+      process_seeds(read_files, long_mode, seeds, total_num_kmers, out, cmin, cmax, bf, cbf);
     }
   } else if (cmin == 1 && cmax < 255) {
     timer.start(" allocating intermediate counting bloom filter (" + cbf_size_str + ")");
@@ -238,16 +267,15 @@ process(const std::vector<std::string>& read_files,
     timer.stop();
     std::cout << std::endl;
     if (using_kmers) {
-      process_kmers(read_files, long_mode, kmer_length, out, cmax, cbf);
+      process_kmers(read_files, long_mode, kmer_length, total_num_kmers, out, cmax, cbf);
     } else {
-      process_seeds(read_files, long_mode, seeds, out, cmax, cbf);
+      process_seeds(read_files, long_mode, seeds, total_num_kmers, out, cmax, cbf);
     }
   } else if (cmin == 1 && cmax == 255) {
-    std::cout << std::endl;
     if (using_kmers) {
-      process_kmers(read_files, long_mode, kmer_length, out);
+      process_kmers(read_files, long_mode, kmer_length, total_num_kmers, out);
     } else {
-      process_seeds(read_files, long_mode, seeds, out);
+      process_seeds(read_files, long_mode, seeds, total_num_kmers, out);
     }
   } else if (cmin == 2 && cmax == 255) {
     timer.start(" allocating distincts bloom filter (" + bf_size_str + ")");
@@ -255,9 +283,9 @@ process(const std::vector<std::string>& read_files,
     timer.stop();
     std::cout << std::endl;
     if (using_kmers) {
-      process_kmers(read_files, long_mode, kmer_length, out, bf);
+      process_kmers(read_files, long_mode, kmer_length, total_num_kmers, out, bf);
     } else {
-      process_seeds(read_files, long_mode, seeds, out, bf);
+      process_seeds(read_files, long_mode, seeds, total_num_kmers, out, bf);
     }
   } else if (cmin > 2 and cmax == 255) {
     timer.start(" allocating distincts bloom filter (" + bf_size_str + ")");
@@ -268,19 +296,18 @@ process(const std::vector<std::string>& read_files,
     timer.stop();
     std::cout << std::endl;
     if (using_kmers) {
-      process_kmers(read_files, long_mode, kmer_length, out, cmin, bf, cbf);
+      process_kmers(read_files, long_mode, kmer_length, total_num_kmers, out, cmin, bf, cbf);
     } else {
-      process_seeds(read_files, long_mode, seeds, out, cmin, bf, cbf);
+      process_seeds(read_files, long_mode, seeds, total_num_kmers, out, cmin, bf, cbf);
     }
   }
-  std::cout << std::endl;
 }
 
 template<class BloomFilter>
 inline void
 save(BloomFilter& bf, const std::string& path)
 {
-  std::cout << "actual output false positive rate: " << bf.get_fpr() << std::endl;
+  std::cout << std::endl << "actual output false positive rate: " << bf.get_fpr() << std::endl;
   utils::Timer timer;
   timer.start("[-o] saving to " + path);
   bf.save(path);
@@ -446,11 +473,12 @@ main(const argparse::ArgumentParser& args)
 
   const auto out_size_str = utils::human_readable(out_size);
   const auto excludes_size_str = utils::human_readable(excludes_size);
+  const auto f0 = histogram[0];
   if (args.is_used("-k") && counts) {
     timer.start(" allocating output btllib::KmerCountingBloomFilter8 (" + out_size_str + ")");
     btllib::KmerCountingBloomFilter8 out(out_size, num_hashes, kmer_length);
     timer.stop();
-    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, bf_size, cbf_size, out);
+    process(read_files, long_mode, kmer_length, seeds, f0, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else if (args.is_used("-k")) {
     timer.start(" allocating output btllib::KmerBloomFilter (" + out_size_str + ")");
@@ -459,15 +487,15 @@ main(const argparse::ArgumentParser& args)
     timer.start(" allocating excludes btllib::KmerBloomFilter (" + excludes_size_str + ")");
     btllib::KmerBloomFilter out_exclude(out_size, num_hashes, kmer_length);
     timer.stop();
-    BloomFilterWrapper<btllib::KmerBloomFilter> out(out_include, out_exclude);
+    BloomFilterWrapper out(out_include, out_exclude);
     timer.stop();
-    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, bf_size, cbf_size, out);
+    process(read_files, long_mode, kmer_length, seeds, f0, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else if (args.is_used("-s") && counts) {
     timer.start(" allocating output btllib::CountingBloomFilter8 (" + out_size_str + ")");
     btllib::CountingBloomFilter8 out(out_size, num_hashes);
     timer.stop();
-    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, bf_size, cbf_size, out);
+    process(read_files, long_mode, kmer_length, seeds, f0, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else if (args.is_used("-s")) {
     timer.start(" allocating output btllib::SeedBloomFilter for includes (" + out_size_str + ")");
@@ -476,8 +504,8 @@ main(const argparse::ArgumentParser& args)
     timer.start(" allocating excludes btllib::SeedBloomFilter (" + excludes_size_str + ")");
     btllib::SeedBloomFilter out_exclude(out_size, kmer_length, seeds, num_hashes);
     timer.stop();
-    BloomFilterWrapper<btllib::SeedBloomFilter> out(out_include, out_exclude);
-    process(read_files, long_mode, kmer_length, seeds, cmin, cmax, bf_size, cbf_size, out);
+    BloomFilterWrapper out(out_include, out_exclude);
+    process(read_files, long_mode, kmer_length, seeds, f0, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else {
     std::cerr << "need to specify at least one of -k or -s" << std::endl;
