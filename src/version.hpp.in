@@ -1,5 +1,0 @@
-#pragma once
-
-#include <string>
-
-constexpr char const* VERSION = "@PROJECT_VERSION@";

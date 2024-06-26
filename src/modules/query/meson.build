@@ -1,0 +1,1 @@
+py.install_sources('query.py', subdir: 'ntstat')

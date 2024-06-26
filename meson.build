@@ -15,34 +15,24 @@ project(
 conf = configuration_data()
 conf.set('PROJECT_VERSION', meson.project_version())
 configure_file(
-    input: 'src/version.hpp.in',
-    output: 'version.hpp',
+    input: 'src/ntstat.py',
+    output: 'ntstat',
     configuration: conf,
-)
-
-compiler = meson.get_compiler('cpp')
-
-dependencies = [
-    dependency('argparse'),
-    dependency('tabulate'),
-    dependency('openmp'),
-    compiler.find_library('btllib'),
-]
-
-include_directories = [
-    'src',
-    'vendor/indicators/include/',
-]
-
-sources = run_command(
-    'scripts/list_sources.sh',
-    check: true,
-).stdout().strip().split()
-
-executable(
-    'ntstat',
-    ['src/main.cpp'] + sources,
-    dependencies: dependencies,
-    include_directories: include_directories,
     install: true,
+    install_dir: 'bin'
 )
+
+pybind11_conf = find_program('pybind11-config')
+pybind11_conf_ret = run_command(pybind11_conf, ['--includes'], check: true)
+pybind11_include = pybind11_conf_ret.stdout().split('-I')[-1].strip()
+pybind11 = declare_dependency(include_directories: [pybind11_include])
+py_deps = [pybind11, dependency('python3')]
+
+py = import('python').find_installation('python3')
+
+indicators = declare_dependency(include_directories: include_directories('vendor/indicators/include'))
+
+subdir('src/modules/filter')
+subdir('src/modules/hist')
+subdir('src/modules/query')
+subdir('src/modules/rarity')
