@@ -1,70 +1,20 @@
 #pragma once
 
 #include <btllib/seq_reader.hpp>
-#include <chrono>
-#include <cmath>
-#include <fstream>
-#include <sstream>
+#include <cstddef>
+#include <math.h>
 #include <stdint.h>
-#include <string>
+#include <tabulate/table.hpp>
 #include <vector>
 
-namespace utils {
-
-inline std::vector<std::string>
-read_file_lines(const std::string& path)
+inline uint64_t
+get_num_elements(unsigned cmin, const std::vector<uint64_t>& histogram, size_t num_seeds)
 {
-  std::vector<std::string> lines;
-  std::ifstream file(path);
-  std::string line;
-  while (file >> line) {
-    lines.emplace_back(line);
+  uint64_t num_elements = histogram[1];
+  for (unsigned i = 2; i < cmin + 1; i++) {
+    num_elements -= histogram[i];
   }
-  return lines;
-}
-
-inline size_t
-get_bf_size(double num_elements, double fpr, double num_hashes)
-{
-  double r = -num_hashes / log(1.0 - exp(log(fpr) / num_hashes));
-  return ceil(num_elements * r);
-}
-
-inline unsigned
-get_num_hashes(double num_elements, double bf_size)
-{
-  return num_elements * log(2) / bf_size;
-}
-
-inline unsigned
-get_seq_reader_flag(bool long_mode)
-{
-  if (long_mode) {
-    return btllib::SeqReader::Flag::LONG_MODE;
-  } else {
-    return btllib::SeqReader::Flag::SHORT_MODE;
-  }
-}
-
-void
-print_seeds_list(const std::vector<std::string>& seeds)
-{
-  for (size_t i = 0; i < seeds.size(); i++) {
-    std::cout << "[-s] seed " << i + 1 << ": " << seeds[i] << std::endl;
-  }
-}
-
-std::vector<uint64_t>
-read_ntcard_histogram(const std::string& path)
-{
-  std::vector<uint64_t> hist;
-  std::ifstream hist_file(path);
-  std::string freq;
-  uint64_t value;
-  while (hist_file >> freq >> value) {
-    hist.push_back(value);
-  }
-  return hist;
+  return num_elements * std::max(1UL, num_seeds);
 }
 
 template<typename T>
@@ -80,6 +30,19 @@ comma_sep(T val)
   return result.substr(0, result.size() - 1);
 }
 
+void
+print_stats_table(uint64_t total, uint64_t distinct, uint64_t filtered)
+{
+  tabulate::Table table;
+  std::cout << std::endl << "overall statistics:" << std::endl;
+  table.add_row({ "total number of k-mers", comma_sep(total) });
+  table.add_row({ "number of distinct k-mers", comma_sep(distinct) });
+  table.add_row({ "number of unique filtered k-mers", comma_sep(filtered) });
+  table.format().border_top("").border_bottom("").border_left("").border_right("").corner("");
+  table.column(1).format().font_align(tabulate::FontAlign::right);
+  std::cout << table << std::endl << std::endl;
+}
+
 inline std::string
 human_readable(size_t bytes)
 {
@@ -93,6 +56,12 @@ human_readable(size_t bytes)
   ss << std::ceil(mantissa * 10.) / 10. << "BKMGTPE"[o];
   ss << (o > 0 ? "B" : "");
   return ss.str();
+}
+
+inline unsigned
+get_seq_reader_flag(bool long_mode)
+{
+  return long_mode ? btllib::SeqReader::Flag::LONG_MODE : btllib::SeqReader::Flag::SHORT_MODE;
 }
 
 class Timer
@@ -129,5 +98,3 @@ public:
     return elapsed.count();
   }
 };
-
-}

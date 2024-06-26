@@ -1,0 +1,1 @@
+py.install_sources('hist.py', subdir: 'ntstat')
