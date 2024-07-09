@@ -39,17 +39,17 @@ class NtCardHistogram:
         return self.__thresholds
 
     def __fit_pdf(
-        self, rv: scipy.stats.rv_continuous
+        self,
+        rv: scipy.stats.rv_continuous,
+        p0: list[float],
     ) -> tuple[scipy.stats.rv_continuous, int]:
         x = np.arange(1, self.max_count + 1)
         y = self.__hist / self.__hist.sum()
-        n_args = 2 if rv.shapes is None else len(rv.shapes.split(", ")) + 1
-        p0 = [0.5] * n_args
         p, _, info, *_ = scipy.optimize.curve_fit(rv.pdf, x, y, p0, full_output=True)
         return rv(*p), info["nfev"]
 
     def fit_burr(self) -> tuple[scipy.stats.rv_continuous, int]:
-        return self.__fit_pdf(scipy.stats.burr)
+        return self.__fit_pdf(scipy.stats.burr, [1, 1, 1])
 
     def fit_expon(self) -> tuple[scipy.stats.rv_continuous, int]:
-        return self.__fit_pdf(scipy.stats.expon)
+        return self.__fit_pdf(scipy.stats.expon, [0.5, 0.5])
