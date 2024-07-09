@@ -1,1 +1,7 @@
-py.install_sources('hist.py', subdir: 'ntstat')
+py.install_sources('__init__.py', subdir: 'ntstat/hist')
+py.install_sources('figures.py', subdir: 'ntstat/hist')
+py.install_sources('histogram.py', subdir: 'ntstat/hist')
+py.install_sources('main.py', subdir: 'ntstat/hist')
+py.install_sources('table_printer.py', subdir: 'ntstat/hist')
+py.install_sources('thresholds.py', subdir: 'ntstat/hist')
+py.install_sources('utils.py', subdir: 'ntstat/hist')
