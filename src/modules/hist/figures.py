@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing
+import scipy.stats
 import termplotlib as tpl
 from histogram import NtCardHistogram
 
@@ -19,10 +20,10 @@ def print_hist(hist: numpy.typing.NDArray[np.uint64]) -> None:
     print()
 
 
-def plot_thresholds(hist: NtCardHistogram, ylog: bool, out_path: str) -> None:
+def plot_thresholds(hist: NtCardHistogram, y_log: bool, out_path: str) -> None:
     fig, ax = plt.subplots()
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    ax.set_yscale("log" if ylog else ax.get_yscale())
+    ax.set_yscale("log" if y_log else ax.get_yscale())
     ax.set_xlabel("K-mer count")
     ax.set_ylabel("Frequency")
     ax.plot(np.arange(1, hist.max_count + 1), hist.values)
@@ -38,3 +39,23 @@ def plot_thresholds(hist: NtCardHistogram, ylog: bool, out_path: str) -> None:
         ax.axvline(x, label=name, c=colors[i + 1], linestyle="--")
     ax.legend()
     fig.savefig(os.path.join(out_path, "thresholds.png"))
+
+
+def plot_distributions(
+    hist: NtCardHistogram,
+    err_rv: scipy.stats.rv_continuous,
+    y_log: bool,
+    out_path: str,
+) -> None:
+    fig, ax = plt.subplots()
+    ax.set_yscale("log" if y_log else ax.get_yscale())
+    ax.set_xlabel("K-mer count")
+    ax.set_ylabel("Frequency")
+    x = np.arange(1, hist.max_count + 1)
+    y_hist = hist.values / hist.values.sum()
+    y_err = err_rv.pdf(x)
+    ax.plot(x, y_hist, label="Actual")
+    ax.plot(x, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
+    ax.plot(x, np.abs(y_err - y_hist), label="Solid k-mers")
+    ax.legend()
+    fig.savefig(os.path.join(out_path, "distributions.png"))

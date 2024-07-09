@@ -38,10 +38,6 @@ class NtCardHistogram:
     def thresholds(self) -> Thresholds:
         return self.__thresholds
 
-    @property
-    def as_scipy_rv(self) -> scipy.stats.rv_histogram:
-        return self.__hist / self.__hist.sum()
-
     def __fit_pdf(
         self, rv: scipy.stats.rv_continuous
     ) -> tuple[scipy.stats.rv_continuous, int]:

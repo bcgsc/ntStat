@@ -34,7 +34,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default="ggplot",
     )
     parser.add_argument(
-        "--ylog",
+        "--y-log",
         help="plot y-axis in log scale",
         action=argparse.BooleanOptionalAction,
     )
@@ -69,16 +69,17 @@ def run(cmd_args: list[str]) -> int:
         ["Otsu thresholds", ", ".join(map(str, hist.thresholds.otsu + 1))],
     )
     if args.err_dist == "burr":
-        err_dist, num_iters = hist.fit_burr()
+        err_rv, num_iters = hist.fit_burr()
     elif args.err_dist == "expon":
-        err_dist, num_iters = hist.fit_expon()
+        err_rv, num_iters = hist.fit_expon()
     table_printer.print(
         "Fitted error distribution",
-        ["Distribution", utils.scipy_rv_to_string(err_dist)],
+        ["Distribution", utils.scipy_rv_to_string(err_rv)],
         ["Number of iterations", num_iters],
     )
     plt.style.use(args.style)
-    figures.plot_thresholds(hist, args.ylog, args.out_path)
+    figures.plot_thresholds(hist, args.y_log, args.out_path)
+    figures.plot_distributions(hist, err_rv, args.y_log, args.out_path)
     return 0
 
 
