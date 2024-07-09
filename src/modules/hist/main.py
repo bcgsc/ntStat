@@ -2,6 +2,7 @@ import argparse
 import sys
 
 import figures
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
 import utils
@@ -25,6 +26,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="error distribution",
         choices=["burr", "expon"],
         default="burr",
+    )
+    parser.add_argument(
+        "-m",
+        "--style",
+        help="matplotlib style",
+        default="ggplot",
+    )
+    parser.add_argument(
+        "--ylog",
+        help="plot y-axis in log scale",
+        action=argparse.BooleanOptionalAction,
     )
     parser.add_argument("-o", "--out-path", help="path for saving results", default=".")
     return parser.parse_args(argv)
@@ -53,7 +65,7 @@ def run(cmd_args: list[str]) -> int:
         ["First minima", hist.thresholds.min0 + 1],
         ["First peak", hist.thresholds.max0 + 1],
         ["Median index", hist.thresholds.median + 1],
-        ["Knee", hist.thresholds.knee + 1],
+        ["Elbow", hist.thresholds.elbow + 1],
         ["Otsu thresholds", ", ".join(map(str, hist.thresholds.otsu + 1))],
     )
     if args.err_dist == "burr":
@@ -65,6 +77,8 @@ def run(cmd_args: list[str]) -> int:
         ["Distribution", utils.scipy_rv_to_string(err_dist)],
         ["Number of iterations", num_iters],
     )
+    plt.style.use(args.style)
+    figures.plot_thresholds(hist, args.ylog, args.out_path)
     return 0
 
 

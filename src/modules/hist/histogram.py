@@ -13,7 +13,7 @@ class NtCardHistogram:
         self.__distinct = int(data[1])
         self.__hist = data[2:]
         self.__hist.setflags(write=False)
-        self.__thresholds = Thresholds(data[2:])
+        self.__thresholds = Thresholds(self.__hist)
 
     def __getitem__(self, count):
         return self.__hist[count - 1]
