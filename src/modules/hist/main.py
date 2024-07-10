@@ -56,15 +56,10 @@ def run(cmd_args: list[str]) -> int:
         ["Number of distinct k-mers", hist.distinct],
         ["Mean frequency", int(hist.values.mean())],
         ["Frequency standard deviation", int(hist.values.std())],
-        ["Median frequency", int(np.median(hist.values))],
-        ["Skewness", int(scipy.stats.skew(hist.values))],
-        ["Kurtosis", int(scipy.stats.kurtosis(hist.values))],
     )
     table_printer.print(
         "Thresholds",
         ["First minima", hist.thresholds.min0 + 1],
-        ["First peak", hist.thresholds.max0 + 1],
-        ["Median index", hist.thresholds.median + 1],
         ["Elbow", hist.thresholds.elbow + 1],
         ["Otsu thresholds", ", ".join(map(str, hist.thresholds.otsu + 1))],
     )

@@ -29,8 +29,6 @@ def plot_thresholds(hist: NtCardHistogram, y_log: bool, out_path: str) -> None:
     ax.plot(np.arange(1, hist.max_count + 1), hist.values)
     thresholds = {
         "First minima": hist.thresholds.min0 + 1,
-        "First peak": hist.thresholds.max0 + 1,
-        "Median index": hist.thresholds.median + 1,
         "Elbow": hist.thresholds.elbow + 1,
     }
     for i, x in enumerate(hist.thresholds.otsu):
@@ -56,6 +54,5 @@ def plot_distributions(
     y_err = err_rv.pdf(x)
     ax.plot(x, y_hist, label="Actual")
     ax.plot(x, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
-    ax.plot(x, np.abs(y_err - y_hist), label="Solid k-mers")
     ax.legend()
     fig.savefig(os.path.join(out_path, "distributions.png"))
