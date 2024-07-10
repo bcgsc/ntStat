@@ -18,5 +18,5 @@ class TablePrinter:
     ) -> None:
         if title:
             print(f"{title}:")
-        print(tabulate.tabulate(rows, header, tablefmt=self.__fmt, intfmt=","))
+        print(tabulate.tabulate(rows, header, self.__fmt, ".10f", ","))
         print()

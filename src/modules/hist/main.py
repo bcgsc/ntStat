@@ -4,7 +4,6 @@ import sys
 import figures
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.stats
 import utils
 from histogram import NtCardHistogram
 from table_printer import TablePrinter
@@ -71,6 +70,7 @@ def run(cmd_args: list[str]) -> int:
         "Fitted error distribution",
         ["Distribution", utils.scipy_rv_to_string(err_rv)],
         ["Number of iterations", num_iters],
+        [f"KL Divergence (x <= {hist.thresholds.min0 + 1})", hist.err_kl_div(err_rv)],
     )
     plt.style.use(args.style)
     figures.plot_thresholds(hist, args.y_log, args.out_path)
