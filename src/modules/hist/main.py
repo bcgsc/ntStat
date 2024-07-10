@@ -1,11 +1,10 @@
 import argparse
 import sys
 
-import figures
-import matplotlib.pyplot as plt
 import numpy as np
 import stdout
 import utils
+from figures import HistogramPlotter
 from histogram import NtCardHistogram
 
 
@@ -29,7 +28,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--style",
-        help="matplotlib style",
+        help="matplotlib style "
+        f"(available library styles: {', '.join(HistogramPlotter.get_valid_styles())})",
         default="ggplot",
     )
     parser.add_argument(
@@ -44,6 +44,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
+    figs = HistogramPlotter(hist, args.style, args.y_log, args.out_path)
     print("Histogram shape (y-axis in log scale):")
     stdout.print_hist(hist.values)
     table_printer = stdout.TablePrinter(args.table_format)
@@ -72,9 +73,8 @@ def run(cmd_args: list[str]) -> int:
         ["Number of iterations", num_iters],
         [f"KL Divergence (x <= {hist.first_minima + 1})", hist.err_kl_div(err_rv)],
     )
-    plt.style.use(args.style)
-    figures.plot_thresholds(hist, args.y_log, args.out_path)
-    figures.plot_distributions(hist, err_rv, args.y_log, args.out_path)
+    figs.plot_thresholds()
+    figs.plot_error_distribution(err_rv)
     return 0
 
 
