@@ -58,9 +58,9 @@ def run(cmd_args: list[str]) -> int:
     )
     table_printer.print(
         "Thresholds",
-        ["First minima", hist.thresholds.min0 + 1],
-        ["Elbow", hist.thresholds.elbow + 1],
-        ["Otsu thresholds", ", ".join(map(str, hist.thresholds.otsu + 1))],
+        ["First minima", hist.first_minima + 1],
+        ["Elbow", hist.elbow + 1],
+        ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
     )
     if args.err_dist == "burr":
         err_rv, num_iters = hist.fit_burr()
@@ -70,7 +70,7 @@ def run(cmd_args: list[str]) -> int:
         "Fitted error distribution",
         ["Distribution", utils.scipy_rv_to_string(err_rv)],
         ["Number of iterations", num_iters],
-        [f"KL Divergence (x <= {hist.thresholds.min0 + 1})", hist.err_kl_div(err_rv)],
+        [f"KL Divergence (x <= {hist.first_minima + 1})", hist.err_kl_div(err_rv)],
     )
     plt.style.use(args.style)
     figures.plot_thresholds(hist, args.y_log, args.out_path)

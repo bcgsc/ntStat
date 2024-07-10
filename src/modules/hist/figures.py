@@ -28,10 +28,10 @@ def plot_thresholds(hist: NtCardHistogram, y_log: bool, out_path: str) -> None:
     ax.set_ylabel("Frequency")
     ax.plot(np.arange(1, hist.max_count + 1), hist.values)
     thresholds = {
-        "First minima": hist.thresholds.min0 + 1,
-        "Elbow": hist.thresholds.elbow + 1,
+        "First minima": hist.first_minima + 1,
+        "Elbow": hist.elbow + 1,
     }
-    for i, x in enumerate(hist.thresholds.otsu):
+    for i, x in enumerate(hist.otsu_thresholds):
         thresholds[f"Otsu threshold {i + 1}"] = x + 1
     for i, (name, x) in enumerate(thresholds.items()):
         ax.axvline(x, label=name, c=colors[i + 1], linestyle="--")

@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing
 import pandas as pd
 import scipy.stats
-from thresholds import Thresholds
+import utils
 
 
 class NtCardHistogram:
@@ -13,7 +13,10 @@ class NtCardHistogram:
         self.__distinct = int(data[1])
         self.__hist = data[2:]
         self.__hist.setflags(write=False)
-        self.__thresholds = Thresholds(self.__hist)
+        self.__elbow = utils.find_elbow(self.__hist)
+        self.__min0 = utils.find_first_minima(self.__hist)
+        self.__otsu = utils.find_otsu_thresholds(self.__hist)
+        self.__otsu.setflags(write=False)
 
     def __getitem__(self, count):
         return self.__hist[count - 1]
@@ -35,8 +38,16 @@ class NtCardHistogram:
         return self.__hist.shape[0]
 
     @property
-    def thresholds(self) -> Thresholds:
-        return self.__thresholds
+    def elbow(self) -> int:
+        return self.__elbow
+
+    @property
+    def first_minima(self) -> int:
+        return self.__min0
+
+    @property
+    def otsu_thresholds(self) -> numpy.typing.NDArray[np.uint]:
+        return self.__otsu
 
     def __fit_pdf(
         self,
@@ -55,6 +66,6 @@ class NtCardHistogram:
         return self.__fit_pdf(scipy.stats.expon, [0.5, 0.5])
 
     def err_kl_div(self, err_rv: scipy.stats.rv_continuous) -> np.float64:
-        x_err = np.arange(1, self.thresholds.min0)
-        y_err = err_rv.pdf(np.arange(1, self.thresholds.min0))
+        x_err = np.arange(1, self.first_minima)
+        y_err = err_rv.pdf(np.arange(1, self.first_minima))
         return scipy.stats.entropy(y_err, self.values[x_err - 1])
