@@ -4,9 +4,9 @@ import sys
 import figures
 import matplotlib.pyplot as plt
 import numpy as np
+import stdout
 import utils
 from histogram import NtCardHistogram
-from table_printer import TablePrinter
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -16,7 +16,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "-f",
         "--table-format",
         help="stdout table format",
-        choices=TablePrinter.get_valid_formats(),
+        choices=stdout.TablePrinter.get_valid_formats(),
         default="simple_outline",
     )
     parser.add_argument(
@@ -45,8 +45,8 @@ def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
     print("Histogram shape (y-axis in log scale):")
-    figures.print_hist(hist.values)
-    table_printer = TablePrinter(args.table_format)
+    stdout.print_hist(hist.values)
+    table_printer = stdout.TablePrinter(args.table_format)
     table_printer.print(
         "Basic stats",
         ["Maximum count", hist.max_count],
