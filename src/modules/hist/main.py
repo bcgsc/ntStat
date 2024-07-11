@@ -28,8 +28,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--style",
-        help="matplotlib style file, url, or name "
-        f"(available style names: ntstat.hist.default, ntstat.hist.presentation, ntstat.hist.paper, ntstat.hist.poster, {', '.join(HistogramPlotter.get_valid_styles())}) ",
+        help="matplotlib style file, url, or one of "
+        "available style names: ntstat.hist.default, ntstat.hist.paper, "
+        f"{', '.join(HistogramPlotter.get_valid_styles())}",
         default="ntstat.hist.default",
     )
     parser.add_argument(
