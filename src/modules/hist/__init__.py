@@ -1,1 +1,1 @@
-from hist.main import run
+from .main import run
