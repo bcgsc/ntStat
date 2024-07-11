@@ -2,6 +2,7 @@ import numpy as np
 import numpy.typing
 import pandas as pd
 import scipy.stats
+import skimage.filters
 import utils
 
 
@@ -69,3 +70,15 @@ class NtCardHistogram:
         x_err = np.arange(1, self.first_minima)
         y_err = err_rv.pdf(np.arange(1, self.first_minima))
         return scipy.stats.entropy(y_err, self.values[x_err - 1])
+
+    def fit_gmm(self) -> tuple[list[scipy.stats.rv_continuous], list[float], int]:
+        x = np.arange(self.first_minima, self.max_count)
+        y = self.__hist[x - 1] / self.__hist[x - 1].sum()
+        otsu = skimage.filters.threshold_multiotsu(hist=(y, x - 1))
+        p0 = [0.5, (otsu[0] - self.first_minima) / 2, 1, 0.5, otsu.mean(), 1]
+        p, _, info, *_ = scipy.optimize.curve_fit(
+            utils.gmm, x, y, p0, full_output=True, maxfev=5000
+        )
+        w = [p[0], p[3]]
+        rvs = [scipy.stats.norm(p[1], p[2]), scipy.stats.norm(p[4], p[5])]
+        return rvs, w, info["nfev"]

@@ -25,3 +25,17 @@ def find_otsu_thresholds(
     hist: numpy.typing.NDArray[np.uint64],
 ) -> numpy.typing.NDArray[np.uint]:
     return skimage.filters.threshold_multiotsu(hist=hist)
+
+
+def gmm(
+    x: numpy.typing.NDArray[np.float64],
+    w1: float,
+    mu1: float,
+    sigma1: float,
+    w2: float,
+    mu2: float,
+    sigma2: float,
+) -> numpy.typing.NDArray[np.float64]:
+    p1 = scipy.stats.norm.pdf(x, mu1, sigma1)
+    p2 = scipy.stats.norm.pdf(x, mu2, sigma2)
+    return w1 * p1 + w2 * p2

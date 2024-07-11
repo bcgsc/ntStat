@@ -42,7 +42,12 @@ class HistogramPlotter:
         ax.legend()
         fig.savefig(os.path.join(self.__out_path, "thresholds.png"))
 
-    def plot_error_distribution(self, err_rv: scipy.stats.rv_continuous) -> None:
+    def plot_error_distribution(
+        self,
+        err_rv: scipy.stats.rv_continuous,
+        gmm_rv: list[scipy.stats.rv_continuous],
+        gmm_w: list[float],
+    ) -> None:
         fig, ax = plt.subplots()
         ax.set_yscale("log" if self.__y_log else ax.get_yscale())
         ax.set_xlabel("K-mer count")
@@ -52,5 +57,7 @@ class HistogramPlotter:
         y_err = err_rv.pdf(x)
         ax.plot(x, y_hist, label="Actual")
         ax.plot(x, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
+        for i, (rv, w) in enumerate(zip(gmm_rv, gmm_w)):
+            ax.plot(x, w * rv.pdf(x), label=f"Component {i + 1}")
         ax.legend()
         fig.savefig(os.path.join(self.__out_path, "distributions.png"))
