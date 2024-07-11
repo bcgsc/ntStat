@@ -59,7 +59,7 @@ class HistogramPlotter:
         y_hist = self.__hist.values[self.__x_range - 1].astype(np.float64)
         y_hist /= y_hist.sum()
         y_err = err_rv.pdf(self.__x_range)
-        ax.bar(self.__x_range, y_hist, label="Histogram", alpha=0.25)
+        ax.bar(self.__x_range, y_hist, label="Histogram", alpha=0.3)
         ax.plot(self.__x_range, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
         y_gmm = np.zeros(self.__x_range.shape[0])
         for i, (rv, w) in enumerate(zip(gmm_rv, gmm_w)):
