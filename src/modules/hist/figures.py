@@ -25,7 +25,7 @@ class HistogramPlotter:
         self.__hist = hist
         self.__y_log = y_log
         self.__out_path = out_path
-        self.__x_range = np.arange(x_min, x_max)
+        self.__x_range = np.arange(x_min, x_max + 1)
 
     def plot_thresholds(self) -> None:
         fig, ax = plt.subplots()
@@ -33,16 +33,19 @@ class HistogramPlotter:
         ax.set_yscale("log" if self.__y_log else ax.get_yscale())
         ax.set_xlabel("K-mer count")
         ax.set_ylabel("Frequency")
-        ax.plot(self.__x_range, self.__hist.values[self.__x_range - 1])
+        ax.bar(self.__x_range, self.__hist.values[self.__x_range - 1], alpha=0.5)
         thresholds = {
             "First minima": self.__hist.first_minima + 1,
             "Elbow": self.__hist.elbow + 1,
         }
         for i, x in enumerate(self.__hist.otsu_thresholds):
             thresholds[f"Otsu threshold {i + 1}"] = x + 1
+        x_ticks = [self.__x_range[0], self.__x_range[-1]]
         for i, (name, x) in enumerate(thresholds.items()):
             if self.__x_range[0] <= x <= self.__x_range[-1]:
                 ax.axvline(x, label=name, c=colors[i + 1], linestyle="--")
+                x_ticks.append(x)
+        ax.set_xticks(x_ticks)
         ax.legend()
         fig.savefig(os.path.join(self.__out_path, "thresholds.png"))
 
@@ -59,7 +62,7 @@ class HistogramPlotter:
         y_hist = self.__hist.values[self.__x_range - 1].astype(np.float64)
         y_hist /= y_hist.sum()
         y_err = err_rv.pdf(self.__x_range)
-        ax.bar(self.__x_range, y_hist, label="Histogram", alpha=0.3)
+        ax.bar(self.__x_range, y_hist, alpha=0.5)
         ax.plot(self.__x_range, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
         y_gmm = np.zeros(self.__x_range.shape[0])
         for i, (rv, w) in enumerate(zip(gmm_rv, gmm_w)):
