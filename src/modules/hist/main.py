@@ -37,6 +37,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="plot y-axis in log scale",
         action=argparse.BooleanOptionalAction,
     )
+    parser.add_argument(
+        "-r",
+        "--plot-range",
+        help="x-axis limits in plots separated by a colon, "
+        "i.e., use a:b to show results in the range a:b",
+        type=utils.validate_plot_range_str,
+    )
     parser.add_argument("-o", "--out-path", help="path for saving results", default=".")
     return parser.parse_args(argv)
 
@@ -44,7 +51,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
-    figs = HistogramPlotter(hist, args.style, args.y_log, args.out_path)
+    x_min, x_max = args.plot_range or (1, hist.max_count)
+    figs = HistogramPlotter(hist, args.style, x_min, x_max, args.y_log, args.out_path)
     print("Histogram shape (y-axis in log scale):")
     stdout.print_hist(hist.values)
     table_printer = stdout.TablePrinter(args.table_format)

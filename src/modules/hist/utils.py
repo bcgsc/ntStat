@@ -1,9 +1,19 @@
+import argparse
+import re
+
 import kneed
 import numpy as np
 import numpy.typing
 import scipy.signal
 import scipy.stats
 import skimage.filters
+
+
+def validate_plot_range_str(r_str: str) -> tuple[int, int]:
+    pattern = re.compile(r"^\d+:\d+$")
+    if not pattern.match(r_str):
+        raise argparse.ArgumentTypeError("invalid value")
+    return tuple(map(int, r_str.split(":")))
 
 
 def scipy_rv_to_string(rv: scipy.stats.rv_continuous | scipy.stats.rv_discrete):

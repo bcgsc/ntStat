@@ -16,6 +16,8 @@ class HistogramPlotter:
         self,
         hist: NtCardHistogram,
         style: str,
+        x_min: int,
+        x_max: int,
         y_log: bool,
         out_path: str,
     ) -> None:
@@ -23,6 +25,7 @@ class HistogramPlotter:
         self.__hist = hist
         self.__y_log = y_log
         self.__out_path = out_path
+        self.__x_range = np.arange(x_min, x_max)
 
     def plot_thresholds(self) -> None:
         fig, ax = plt.subplots()
@@ -30,7 +33,7 @@ class HistogramPlotter:
         ax.set_yscale("log" if self.__y_log else ax.get_yscale())
         ax.set_xlabel("K-mer count")
         ax.set_ylabel("Frequency")
-        ax.plot(np.arange(1, self.__hist.max_count + 1), self.__hist.values)
+        ax.plot(self.__x_range, self.__hist.values[self.__x_range - 1])
         thresholds = {
             "First minima": self.__hist.first_minima + 1,
             "Elbow": self.__hist.elbow + 1,
@@ -38,7 +41,8 @@ class HistogramPlotter:
         for i, x in enumerate(self.__hist.otsu_thresholds):
             thresholds[f"Otsu threshold {i + 1}"] = x + 1
         for i, (name, x) in enumerate(thresholds.items()):
-            ax.axvline(x, label=name, c=colors[i + 1], linestyle="--")
+            if self.__x_range[0] <= x <= self.__x_range[-1]:
+                ax.axvline(x, label=name, c=colors[i + 1], linestyle="--")
         ax.legend()
         fig.savefig(os.path.join(self.__out_path, "thresholds.png"))
 
@@ -51,13 +55,17 @@ class HistogramPlotter:
         fig, ax = plt.subplots()
         ax.set_yscale("log" if self.__y_log else ax.get_yscale())
         ax.set_xlabel("K-mer count")
-        ax.set_ylabel("Frequency")
-        x = np.arange(1, self.__hist.max_count + 1)
-        y_hist = self.__hist.values / self.__hist.values.sum()
-        y_err = err_rv.pdf(x)
-        ax.plot(x, y_hist, label="Actual")
-        ax.plot(x, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
+        ax.set_ylabel("Probability density")
+        y_hist = self.__hist.values[self.__x_range - 1].astype(np.float64)
+        y_hist /= y_hist.sum()
+        y_err = err_rv.pdf(self.__x_range)
+        ax.bar(self.__x_range, y_hist, label="Histogram", alpha=0.25)
+        ax.plot(self.__x_range, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
+        y_gmm = np.zeros(self.__x_range.shape[0])
         for i, (rv, w) in enumerate(zip(gmm_rv, gmm_w)):
-            ax.plot(x, w * rv.pdf(x), label=f"Component {i + 1}")
+            y = w * rv.pdf(self.__x_range)
+            y_gmm += y
+            ax.plot(self.__x_range, y, label=f"Component {i + 1} ({rv.dist.name})")
+        ax.plot(self.__x_range, y_gmm, label="Mixture model", linestyle="dashed")
         ax.legend()
         fig.savefig(os.path.join(self.__out_path, "distributions.png"))
