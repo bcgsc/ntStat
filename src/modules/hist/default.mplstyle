@@ -1,0 +1,18 @@
+figure.dpi: 300
+figure.figsize: 8, 4
+figure.autolayout: True
+
+axes.facecolor: ECEFF1
+axes.edgecolor: black
+axes.prop_cycle: cycler('color', ['262F3E', '0F4C81', '9B1B30', '009473', 'D6AA4D', '6667AB', '882255'])
+axes.grid: True
+axes.axisbelow: True
+
+grid.color: white
+grid.linestyle: -
+
+font.family: sans-serif
+font.sans-serif: Helvetica, Helvetica Neue, Arial, Liberation Sans, DejaVu Sans, Bitstream Vera Sans, sans-serif
+
+xtick.bottom: False
+ytick.left: False

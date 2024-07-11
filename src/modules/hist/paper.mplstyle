@@ -1,0 +1,18 @@
+figure.dpi: 300
+figure.figsize: 6, 3
+figure.autolayout: True
+
+axes.facecolor: white
+axes.edgecolor: black
+axes.prop_cycle: cycler('color', ['003FFF', 'E8000B', '00E035', 'FFC400', '8A2BE2', '00B1D2', '4A4A4A'])
+axes.grid: True
+axes.axisbelow: True
+
+grid.color: C0C0C0
+grid.linestyle: -
+
+font.family: serif
+font.serif: Times New Roman, Times, STIX, Computer Modern Roman, DejaVu Serif, Bitstream Vera Serif, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Palatino, Charter, serif
+
+xtick.bottom: False
+ytick.left: False
