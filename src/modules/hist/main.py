@@ -1,10 +1,11 @@
 import argparse
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 import stdout
 import utils
-from figures import HistogramPlotter
+import figures
 from histogram import NtCardHistogram
 
 
@@ -30,7 +31,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--style",
         help="matplotlib style file, url, or one of "
         "available style names: ntstat.hist.default, ntstat.hist.paper, "
-        f"{', '.join(HistogramPlotter.get_valid_styles())}",
+        f"{', '.join(plt.style.available)}",
         default="ntstat.hist.default",
     )
     parser.add_argument(
@@ -45,15 +46,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "i.e., use a:b to show results in the range a:b",
         type=utils.validate_plot_range_str,
     )
-    parser.add_argument("-o", "--out-path", help="path for saving results", default=".")
+    parser.add_argument("-o", "--out-path", help="path to output plot", required=True)
     return parser.parse_args(argv)
 
 
 def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
-    x_min, x_max = args.plot_range or (1, hist.max_count)
-    figs = HistogramPlotter(hist, args.style, x_min, x_max, args.y_log, args.out_path)
     print("Histogram shape (y-axis in log scale):")
     stdout.print_hist(hist.values)
     table_printer = stdout.TablePrinter(args.table_format)
@@ -82,7 +81,7 @@ def run(cmd_args: list[str]) -> int:
         ["Number of iterations", err_num_iters],
         [f"KL Divergence (x <= {hist.first_minima + 1})", hist.err_kl_div(err_rv)],
     )
-    gmm_rv, gmm_w, gmm_num_iters = hist.fit_gmm()
+    gmm_rv, gmm_w, gmm_norm, gmm_num_iters = hist.fit_gmm()
     table_printer.print(
         "Fitted mixture model",
         ["Component 1", utils.scipy_rv_to_string(gmm_rv[0])],
@@ -90,8 +89,20 @@ def run(cmd_args: list[str]) -> int:
         ["Weights", ", ".join(f"{w:.3f}" for w in gmm_w)],
         ["Number of iterations", gmm_num_iters],
     )
-    figs.plot_thresholds()
-    figs.plot_error_distribution(err_rv, gmm_rv, gmm_w)
+    x_min, x_max = args.plot_range or (1, hist.max_count)
+    figures.plot(
+        hist,
+        err_rv,
+        gmm_rv,
+        gmm_w,
+        gmm_norm,
+        args.style,
+        x_min,
+        x_max,
+        args.y_log,
+        args.out_path,
+    )
+    print(f"Saved plot to {args.out_path}")
     return 0
 
 
