@@ -72,9 +72,9 @@ def run(cmd_args: list[str]) -> int:
         ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
     )
     if args.err_dist == "burr":
-        err_rv, err_num_iters = hist.fit_burr()
+        err_rv, err_norm, err_num_iters = hist.fit_burr()
     elif args.err_dist == "expon":
-        err_rv, err_num_iters = hist.fit_expon()
+        err_rv, err_norm, err_num_iters = hist.fit_expon()
     table_printer.print(
         "Fitted error distribution",
         ["Distribution", utils.scipy_rv_to_string(err_rv)],
@@ -93,6 +93,7 @@ def run(cmd_args: list[str]) -> int:
     figures.plot(
         hist,
         err_rv,
+        err_norm,
         gmm_rv,
         gmm_w,
         gmm_norm,

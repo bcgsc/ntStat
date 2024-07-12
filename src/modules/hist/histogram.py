@@ -50,21 +50,22 @@ class NtCardHistogram:
     def otsu_thresholds(self) -> numpy.typing.NDArray[np.uint]:
         return self.__otsu
 
-    def __fit_pdf(
+    def __fit_err_pdf(
         self,
         rv: scipy.stats.rv_continuous,
         p0: list[float],
-    ) -> tuple[scipy.stats.rv_continuous, int]:
-        x = np.arange(1, self.max_count + 1)
-        y = self.__hist / self.__hist.sum()
+    ) -> tuple[scipy.stats.rv_continuous, float, int]:
+        x = np.arange(1, self.first_minima + 1)
+        norm = self.__hist[x - 1].sum()
+        y = self.__hist[x - 1] / norm
         p, _, info, *_ = scipy.optimize.curve_fit(rv.pdf, x, y, p0, full_output=True)
-        return rv(*p), info["nfev"]
+        return rv(*p), norm, info["nfev"]
 
-    def fit_burr(self) -> tuple[scipy.stats.rv_continuous, int]:
-        return self.__fit_pdf(scipy.stats.burr, [1, 1, 1])
+    def fit_burr(self) -> tuple[scipy.stats.rv_continuous, float, int]:
+        return self.__fit_err_pdf(scipy.stats.burr, [1, 1, 1])
 
-    def fit_expon(self) -> tuple[scipy.stats.rv_continuous, int]:
-        return self.__fit_pdf(scipy.stats.expon, [0.5, 0.5])
+    def fit_expon(self) -> tuple[scipy.stats.rv_continuous, float, int]:
+        return self.__fit_err_pdf(scipy.stats.expon, [0.5, 0.5])
 
     def err_kl_div(self, err_rv: scipy.stats.rv_continuous) -> np.float64:
         x_err = np.arange(1, self.first_minima)

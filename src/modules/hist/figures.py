@@ -8,6 +8,7 @@ from histogram import NtCardHistogram
 def plot(
     hist: NtCardHistogram,
     err_rv: scipy.stats.rv_continuous,
+    err_norm: float,
     gmm_rv: list[scipy.stats.rv_continuous],
     gmm_w: list[float],
     gmm_norm: float,
@@ -27,7 +28,7 @@ def plot(
 
     bars = ax.bar(x_range, hist.values[x_range - 1])
     plt.plot([], [])  # shift the color map
-    y_err = err_rv.pdf(x_range) * hist.values.sum()
+    y_err = err_rv.pdf(x_range) * err_norm
     ax.plot(x_range, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
     y_gmm = np.zeros(x_range.shape[0])
     for i, (rv, w) in enumerate(zip(gmm_rv, gmm_w)):
