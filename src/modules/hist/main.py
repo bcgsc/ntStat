@@ -1,11 +1,11 @@
 import argparse
+import os
 import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-import stdout
+import output
 import utils
-import figures
 from histogram import NtCardHistogram
 
 
@@ -16,7 +16,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "-f",
         "--table-format",
         help="stdout table format",
-        choices=stdout.TablePrinter.get_valid_formats(),
+        choices=output.TablePrinter.get_valid_formats(),
         default="simple_outline",
     )
     parser.add_argument(
@@ -46,7 +46,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "i.e., use a:b to show results in the range a:b",
         type=utils.validate_plot_range_str,
     )
-    parser.add_argument("-o", "--out-path", help="path to output plot", required=True)
+    parser.add_argument(
+        "-o",
+        "--out-path",
+        help="path to output directory",
+        default=".",
+    )
     return parser.parse_args(argv)
 
 
@@ -54,8 +59,8 @@ def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
     print("Histogram shape (y-axis in log scale):")
-    stdout.print_hist(hist.values)
-    table_printer = stdout.TablePrinter(args.table_format)
+    output.print_hist(hist.values)
+    table_printer = output.TablePrinter(args.table_format)
     table_printer.print(
         "Basic stats",
         ["Maximum count", hist.max_count],
@@ -95,7 +100,8 @@ def run(cmd_args: list[str]) -> int:
         ["Weak/solid intersection", x_intersect + 1],
     )
     x_min, x_max = args.plot_range or (1, hist.max_count)
-    figures.plot(
+    plot_path = os.path.join(args.out_path, "plot.png")
+    output.save_plot(
         hist,
         err_rv,
         err_norm,
@@ -107,9 +113,9 @@ def run(cmd_args: list[str]) -> int:
         x_min,
         x_max,
         args.y_log,
-        args.out_path,
+        plot_path,
     )
-    print(f"Saved plot to {args.out_path}")
+    print(f"Saved plot to {plot_path}")
     return 0
 
 
