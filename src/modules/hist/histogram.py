@@ -55,7 +55,7 @@ class NtCardHistogram:
         rv: scipy.stats.rv_continuous,
         p0: list[float],
     ) -> tuple[scipy.stats.rv_continuous, float, int]:
-        x = np.arange(1, self.first_minima + 1)
+        x = np.arange(1, self.max_count + 1)
         norm = self.__hist[x - 1].sum()
         y = self.__hist[x - 1] / norm
         p, _, info, *_ = scipy.optimize.curve_fit(rv.pdf, x, y, p0, full_output=True)
@@ -72,7 +72,9 @@ class NtCardHistogram:
         y_err = err_rv.pdf(np.arange(1, self.first_minima))
         return scipy.stats.entropy(y_err, self.values[x_err - 1])
 
-    def fit_gmm(self) -> tuple[list[scipy.stats.rv_continuous], list[float], float, int]:
+    def fit_gmm(
+        self,
+    ) -> tuple[list[scipy.stats.rv_continuous], list[float], float, int]:
         x = np.arange(self.first_minima, self.max_count)
         norm = self.__hist[x - 1].sum()
         y = self.__hist[x - 1] / norm

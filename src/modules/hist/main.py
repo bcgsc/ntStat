@@ -83,7 +83,7 @@ def run(cmd_args: list[str]) -> int:
         ["Weights", ", ".join(f"{w:.3f}" for w in gmm_w)],
         ["Number of iterations", gmm_num_iters],
     )
-    x = np.arange(hist.max_count + 1)
+    x = np.arange(1, hist.max_count + 1)
     y_err = err_rv.pdf(x) * err_norm
     y_gmm = (gmm_w[0] * gmm_rv[0].pdf(x) + gmm_w[1] * gmm_rv[1].pdf(x)) * gmm_norm
     x_intersect = utils.find_intersection(y_err, y_gmm)
