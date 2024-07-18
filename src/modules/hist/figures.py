@@ -12,6 +12,7 @@ def plot(
     gmm_rv: list[scipy.stats.rv_continuous],
     gmm_w: list[float],
     gmm_norm: float,
+    x_intersect: int,
     style: str,
     x_min: int,
     x_max: int,
@@ -39,15 +40,15 @@ def plot(
 
     thresholds = {
         "First minima": hist.first_minima + 1,
-        "Elbow": hist.elbow + 1,
+        "Peak 1": np.rint(gmm_rv[0].args[0]).astype(int),
+        "Peak 2": np.rint(gmm_rv[1].args[0]).astype(int),
+        "Weak/solid intersection": x_intersect,
     }
-    for i, x in enumerate(hist.otsu_thresholds):
-        thresholds[f"Otsu threshold {i + 1}"] = x + 1
     handles, labels = ax.get_legend_handles_labels()
     for i, (name, x) in enumerate(thresholds.items()):
         if x_range[0] <= x <= x_range[-1]:
             color = colors[(i + 5) % len(colors)]
-            bars[x - 1].set_color(color)
+            bars[x - x_min].set_color(color)
             handles.append(matplotlib.patches.Patch(facecolor=color))
             labels.append(name)
 

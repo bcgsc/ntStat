@@ -65,12 +65,6 @@ def run(cmd_args: list[str]) -> int:
         ["Mean frequency", int(hist.values.mean())],
         ["Frequency standard deviation", int(hist.values.std())],
     )
-    table_printer.print(
-        "Thresholds",
-        ["First minima", hist.first_minima + 1],
-        ["Elbow", hist.elbow + 1],
-        ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
-    )
     if args.err_dist == "burr":
         err_rv, err_norm, err_num_iters = hist.fit_burr()
     elif args.err_dist == "expon":
@@ -89,6 +83,17 @@ def run(cmd_args: list[str]) -> int:
         ["Weights", ", ".join(f"{w:.3f}" for w in gmm_w)],
         ["Number of iterations", gmm_num_iters],
     )
+    x = np.arange(hist.max_count + 1)
+    y_err = err_rv.pdf(x) * err_norm
+    y_gmm = (gmm_w[0] * gmm_rv[0].pdf(x) + gmm_w[1] * gmm_rv[1].pdf(x)) * gmm_norm
+    x_intersect = utils.find_intersection(y_err, y_gmm)
+    table_printer.print(
+        "Thresholds",
+        ["First minima", hist.first_minima + 1],
+        ["Elbow", hist.elbow + 1],
+        ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
+        ["Weak/solid intersection", x_intersect + 1],
+    )
     x_min, x_max = args.plot_range or (1, hist.max_count)
     figures.plot(
         hist,
@@ -97,6 +102,7 @@ def run(cmd_args: list[str]) -> int:
         gmm_rv,
         gmm_w,
         gmm_norm,
+        x_intersect,
         args.style,
         x_min,
         x_max,

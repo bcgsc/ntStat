@@ -49,3 +49,10 @@ def gmm(
     p1 = scipy.stats.norm.pdf(x, mu1, sigma1)
     p2 = scipy.stats.norm.pdf(x, mu2, sigma2)
     return w1 * p1 + w2 * p2
+
+
+def find_intersection(
+    y1: numpy.typing.NDArray[np.float64],
+    y2: numpy.typing.NDArray[np.float64],
+) -> int:
+    return np.argmin(np.abs(y1 - y2))
