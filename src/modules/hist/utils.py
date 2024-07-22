@@ -37,6 +37,16 @@ def find_otsu_thresholds(
     return skimage.filters.threshold_multiotsu(hist=hist)
 
 
+def get_coverage(gmm_rv: list[scipy.stats.rv_continuous]) -> float:
+    return max(gmm_rv[0].args[0], gmm_rv[1].args[0])
+
+
+def format_bp(x):
+    units = ["", "K", "M", "G", "T", "P"]
+    magnitude = int(np.log10(x))
+    return f"{x / 10 ** magnitude:.3f}{units[magnitude // 3]}bp"
+
+
 def gmm(
     x: numpy.typing.NDArray[np.float64],
     w1: float,

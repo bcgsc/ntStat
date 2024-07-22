@@ -25,10 +25,11 @@ class TablePrinter:
         title: str,
         *rows: list[list[str]],
         header: list[str] = (),
+        **kwargs,
     ) -> None:
         if title:
             print(f"{title}:")
-        print(tabulate.tabulate(rows, header, self.__fmt, ".3f", ","))
+        print(tabulate.tabulate(rows, header, self.__fmt, ".3f", ",", **kwargs))
         print()
 
 

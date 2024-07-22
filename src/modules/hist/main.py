@@ -101,6 +101,13 @@ def run(cmd_args: list[str]) -> int:
         ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
         ["Weak/solid intersection", x_intersect + 1],
     )
+    cov = utils.get_coverage(gmm_rv)
+    genome_len = int(hist.total / cov)
+    table_printer.print(
+        "Dataset characteristics (estimated)",
+        ["Coverage", f"{cov:.1f}x"],
+        ["Genome length", utils.format_bp(genome_len)],
+    )
     x_min, x_max = args.plot_range or (1, hist.max_count)
     plot_path = os.path.join(args.out_path, "plot.png")
     output.save_plot(
