@@ -65,4 +65,4 @@ def find_intersection(
     y1: numpy.typing.NDArray[np.float64],
     y2: numpy.typing.NDArray[np.float64],
 ) -> int:
-    return np.argmin(np.abs(y1 - y2))
+    return np.where(y2 >= y1)[0][0]

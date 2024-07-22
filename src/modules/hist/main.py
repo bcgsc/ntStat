@@ -84,10 +84,8 @@ def run(cmd_args: list[str]) -> int:
         [f"KL Divergence", hist.kl_div(err_rv, gmm_rv, gmm_w)],
     )
     x = np.arange(1, hist.max_count + 1)
-    y_err = err_rv.pdf(x) * hist.values.sum()
-    y_gmm = (
-        gmm_w[0] * gmm_rv[0].pdf(x) + gmm_w[1] * gmm_rv[1].pdf(x)
-    ) * hist.values.sum()
+    y_err = err_rv.pdf(x)
+    y_gmm = gmm_w[0] * gmm_rv[0].pdf(x) + gmm_w[1] * gmm_rv[1].pdf(x)
     x_intersect = utils.find_intersection(y_err, y_gmm) + 1
     table_printer.print(
         "Thresholds",
