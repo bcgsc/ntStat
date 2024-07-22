@@ -59,10 +59,18 @@ class NtCardHistogram:
     def fit_expon(self) -> tuple[scipy.stats.rv_continuous, int]:
         return self.__fit_err_pdf(scipy.stats.expon, [0.5, 0.5])
 
-    def err_kl_div(self, err_rv: scipy.stats.rv_continuous) -> np.float64:
-        x_err = np.arange(1, self.first_minima)
-        y_err = err_rv.pdf(np.arange(1, self.first_minima))
-        return scipy.stats.entropy(y_err, self.values[x_err - 1])
+    def kl_div(
+        self,
+        err_rv: scipy.stats.rv_continuous,
+        gmm_rv: list[scipy.stats.rv_continuous],
+        gmm_w: list[float],
+    ) -> np.float64:
+        x = np.arange(1, self.max_count + 1)
+        p_err = err_rv.pdf(x)
+        p_gmm = gmm_w[0] * gmm_rv[0].pdf(x) + gmm_w[1] * gmm_rv[1].pdf(x)
+        p = p_err + p_gmm
+        q = self.as_distribution()
+        return scipy.stats.entropy(p, q)
 
     def fit_gmm(
         self,

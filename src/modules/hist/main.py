@@ -58,6 +58,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
+    if args.err_dist == "burr":
+        err_rv, err_num_iters = hist.fit_burr()
+    elif args.err_dist == "expon":
+        err_rv, err_num_iters = hist.fit_expon()
+    gmm_rv, gmm_w, gmm_num_iters = hist.fit_gmm(err_rv)
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
     table_printer = output.TablePrinter(args.table_format)
@@ -70,23 +75,13 @@ def run(cmd_args: list[str]) -> int:
         ["Mean frequency", int(hist.values.mean())],
         ["Frequency standard deviation", int(hist.values.std())],
     )
-    if args.err_dist == "burr":
-        err_rv, err_num_iters = hist.fit_burr()
-    elif args.err_dist == "expon":
-        err_rv, err_num_iters = hist.fit_expon()
     table_printer.print(
-        "Fitted error distribution",
-        ["Distribution", utils.scipy_rv_to_string(err_rv)],
-        ["Number of iterations", err_num_iters],
-        [f"KL Divergence (x <= {hist.first_minima + 1})", hist.err_kl_div(err_rv)],
-    )
-    gmm_rv, gmm_w, gmm_num_iters = hist.fit_gmm(err_rv)
-    table_printer.print(
-        "Fitted mixture model",
-        ["Component 1", utils.scipy_rv_to_string(gmm_rv[0])],
-        ["Component 2", utils.scipy_rv_to_string(gmm_rv[1])],
-        ["Weights", ", ".join(f"{w:.3f}" for w in gmm_w)],
-        ["Number of iterations", gmm_num_iters],
+        "Fitted model",
+        ["Error distribution", utils.scipy_rv_to_string(err_rv)],
+        [f"Heterozygous (w = {gmm_w[0]:.2f})", utils.scipy_rv_to_string(gmm_rv[0])],
+        [f"Homozygous   (w = {gmm_w[1]:.2f})", utils.scipy_rv_to_string(gmm_rv[1])],
+        ["Number of iterations", err_num_iters + gmm_num_iters],
+        [f"KL Divergence", hist.kl_div(err_rv, gmm_rv, gmm_w)],
     )
     x = np.arange(1, hist.max_count + 1)
     y_err = err_rv.pdf(x) * hist.values.sum()
