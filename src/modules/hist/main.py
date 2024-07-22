@@ -71,16 +71,16 @@ def run(cmd_args: list[str]) -> int:
         ["Frequency standard deviation", int(hist.values.std())],
     )
     if args.err_dist == "burr":
-        err_rv, err_norm, err_num_iters = hist.fit_burr()
+        err_rv, err_num_iters = hist.fit_burr()
     elif args.err_dist == "expon":
-        err_rv, err_norm, err_num_iters = hist.fit_expon()
+        err_rv, err_num_iters = hist.fit_expon()
     table_printer.print(
         "Fitted error distribution",
         ["Distribution", utils.scipy_rv_to_string(err_rv)],
         ["Number of iterations", err_num_iters],
         [f"KL Divergence (x <= {hist.first_minima + 1})", hist.err_kl_div(err_rv)],
     )
-    gmm_rv, gmm_w, gmm_norm, gmm_num_iters = hist.fit_gmm()
+    gmm_rv, gmm_w, gmm_num_iters = hist.fit_gmm(err_rv)
     table_printer.print(
         "Fitted mixture model",
         ["Component 1", utils.scipy_rv_to_string(gmm_rv[0])],
@@ -89,9 +89,11 @@ def run(cmd_args: list[str]) -> int:
         ["Number of iterations", gmm_num_iters],
     )
     x = np.arange(1, hist.max_count + 1)
-    y_err = err_rv.pdf(x) * err_norm
-    y_gmm = (gmm_w[0] * gmm_rv[0].pdf(x) + gmm_w[1] * gmm_rv[1].pdf(x)) * gmm_norm
-    x_intersect = utils.find_intersection(y_err, y_gmm)
+    y_err = err_rv.pdf(x) * hist.values.sum()
+    y_gmm = (
+        gmm_w[0] * gmm_rv[0].pdf(x) + gmm_w[1] * gmm_rv[1].pdf(x)
+    ) * hist.values.sum()
+    x_intersect = utils.find_intersection(y_err, y_gmm) + 1
     table_printer.print(
         "Thresholds",
         ["First minima", hist.first_minima + 1],
@@ -104,10 +106,8 @@ def run(cmd_args: list[str]) -> int:
     output.save_plot(
         hist,
         err_rv,
-        err_norm,
         gmm_rv,
         gmm_w,
-        gmm_norm,
         x_intersect,
         args.style,
         x_min,

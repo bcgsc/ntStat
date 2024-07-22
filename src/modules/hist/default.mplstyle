@@ -1,14 +1,14 @@
 figure.dpi: 300
-figure.figsize: 8, 5
+figure.figsize: 7, 5
 figure.autolayout: True
 
-axes.facecolor: ECEFF1
+axes.facecolor: EBF1F5
 axes.edgecolor: black
-axes.prop_cycle: cycler('color', ['A0A9B1', '9B1B30', '0F4C81', '009473', '192027', 'E7718C', '92A8D1', '7BC4C4', 'FFBE98'])
+axes.prop_cycle: cycler("color", ["CFD8DD","ce4e77","23a4e0","292f36","B4ADCB","e094a0","DFC997","ACC59C"])
 axes.grid: True
 axes.axisbelow: True
 
-grid.color: white
+grid.color: fffdf7
 grid.linestyle: -
 
 font.family: sans-serif

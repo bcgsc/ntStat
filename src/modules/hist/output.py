@@ -52,10 +52,8 @@ def print_hist(hist: numpy.typing.NDArray[np.uint64]) -> None:
 def save_plot(
     hist: NtCardHistogram,
     err_rv: scipy.stats.rv_continuous,
-    err_norm: float,
     gmm_rv: list[scipy.stats.rv_continuous],
     gmm_w: list[float],
-    gmm_norm: float,
     x_intersect: int,
     style: str,
     x_min: int,
@@ -70,32 +68,36 @@ def save_plot(
     ax.set_yscale("log" if y_log else ax.get_yscale())
     ax.set_xlabel("K-mer count")
     ax.set_ylabel("Frequency")
-
+    norm = hist.values.sum()
+    y_err = err_rv.pdf(x_range) * norm
+    y_h0 = gmm_w[0] * gmm_rv[0].pdf(x_range) * norm
+    y_h1 = gmm_w[1] * gmm_rv[1].pdf(x_range) * norm
+    y_gmm = y_h0 + y_h1
+    y_fitted = y_err + y_gmm
     bars = ax.bar(x_range, hist.values[x_range - 1])
     plt.plot([], [])  # shift the color map
-    y_err = err_rv.pdf(x_range) * err_norm
     ax.plot(x_range, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
-    y_gmm = np.zeros(x_range.shape[0])
-    for i, (rv, w) in enumerate(zip(gmm_rv, gmm_w)):
-        y = w * rv.pdf(x_range) * gmm_norm
-        y_gmm += y
-        ax.plot(x_range, y, label=f"Component {i + 1} ({rv.dist.name})")
-    ax.plot(x_range, y_gmm, label="Mixture model", linestyle="--", linewidth=2.5)
-
+    ax.plot(x_range, y_gmm, label="Solid k-mers")
+    ax.plot(x_range, y_fitted, label="Fitted model", linestyle="--", linewidth=2.5)
     thresholds = {
+        "Heterozygous peak": np.rint(gmm_rv[0].args[0]).astype(int),
+        "Homozygous peak": np.rint(gmm_rv[1].args[0]).astype(int),
         "First minima": hist.first_minima + 1,
-        "Peak 1": np.rint(gmm_rv[0].args[0]).astype(int),
-        "Peak 2": np.rint(gmm_rv[1].args[0]).astype(int),
         "Weak/solid intersection": x_intersect,
     }
     handles, labels = ax.get_legend_handles_labels()
     for i, (name, x) in enumerate(thresholds.items()):
         if x_range[0] <= x <= x_range[-1]:
-            color = colors[(i + 5) % len(colors)]
+            color = colors[(i + 4) % len(colors)]
             bars[x - x_min].set_color(color)
             handles.append(matplotlib.patches.Patch(facecolor=color))
             labels.append(name)
-
     ax.set_ylim(bottom=1)
-    ax.legend(handles=handles, labels=labels, ncols=2)
+    ax.legend(
+        handles=handles,
+        labels=labels,
+        ncols=len(handles) // 2,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),
+    )
     fig.savefig(out_path)
