@@ -1,14 +1,13 @@
 import os
 import warnings
 
+import matplotlib.patches
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing
+import scipy.stats
 import tabulate
 import termplotlib as tpl
-import matplotlib.pyplot as plt
-import matplotlib.patches
-import numpy as np
-import scipy.stats
 from histogram import NtCardHistogram
 
 
