@@ -20,13 +20,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default="simple_outline",
     )
     parser.add_argument(
-        "-e",
-        "--err-dist",
-        help="error distribution",
-        choices=["burr", "expon"],
-        default="burr",
-    )
-    parser.add_argument(
         "-m",
         "--style",
         help="matplotlib style file, url, or one of "
@@ -58,10 +51,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
-    if args.err_dist == "burr":
-        err_rv, err_num_iters = hist.fit_burr()
-    elif args.err_dist == "expon":
-        err_rv, err_num_iters = hist.fit_expon()
+    err_rv, err_num_iters = hist.fit_err()
     gmm_rv, gmm_w, gmm_num_iters = hist.fit_gmm(err_rv)
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)

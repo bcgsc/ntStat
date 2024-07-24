@@ -53,12 +53,6 @@ class NtCardHistogram:
     def as_distribution(self) -> numpy.typing.NDArray[np.float64]:
         return self.values / self.values.sum()
 
-    def fit_burr(self) -> tuple[scipy.stats.rv_continuous, int]:
-        return self.__fit_err_pdf(scipy.stats.burr, [1, 1, 1])
-
-    def fit_expon(self) -> tuple[scipy.stats.rv_continuous, int]:
-        return self.__fit_err_pdf(scipy.stats.expon, [0.5, 0.5])
-
     def kl_div(
         self,
         err_rv: scipy.stats.rv_continuous,
@@ -87,12 +81,10 @@ class NtCardHistogram:
         rvs = [scipy.stats.norm(p[1], p[2]), scipy.stats.norm(p[4], p[5])]
         return rvs, w, info["nfev"]
 
-    def __fit_err_pdf(
-        self,
-        rv: scipy.stats.rv_continuous,
-        p0: list[float],
-    ) -> tuple[scipy.stats.rv_continuous, float, int]:
+    def fit_err(self) -> tuple[scipy.stats.rv_continuous, float, int]:
         x = np.arange(1, self.max_count + 1)
         y = self.as_distribution()
+        rv = scipy.stats.burr
+        p0 = [1, 1, 1]
         p, _, info, *_ = scipy.optimize.curve_fit(rv.pdf, x, y, p0, full_output=True)
         return rv(*p), info["nfev"]
