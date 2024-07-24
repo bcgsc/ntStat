@@ -41,12 +41,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "i.e., use a:b to show results in the range a:b",
         type=utils.validate_plot_range_str,
     )
-    parser.add_argument(
-        "-o",
-        "--out-path",
-        help="path to output plot",
-        default=".",
-    )
+    parser.add_argument("-o", "--out-path", help="path to output plot")
     return parser.parse_args(argv)
 
 
@@ -58,15 +53,6 @@ def run(cmd_args: list[str]) -> int:
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
     table_printer = output.TablePrinter(args.table_format)
-    table_printer.print(
-        "Basic stats",
-        ["Maximum count", hist.max_count],
-        ["Support", np.count_nonzero(hist.values)],
-        ["Total number of k-mers", hist.total],
-        ["Number of distinct k-mers", hist.distinct],
-        ["Mean frequency", int(hist.values.mean())],
-        ["Frequency standard deviation", int(hist.values.std())],
-    )
     table_printer.print(
         "Fitted model",
         ["Error distribution", utils.scipy_rv_to_string(model.err_rv)],
@@ -81,32 +67,40 @@ def run(cmd_args: list[str]) -> int:
         ["Number of iterations", num_iters],
         [f"KL Divergence", utils.kl_div(hist, model)],
     )
+    num_solid = utils.count_solid_kmers(hist, model)
+    table_printer.print(
+        "k-mer statistics",
+        ["Total number of k-mers", hist.total],
+        ["Number of distinct k-mers", hist.distinct],
+        ["Number of solid k-mers", num_solid],
+    )
     x_intersect = model.get_solid_weak_intersection(np.arange(1, hist.max_count + 1))
     table_printer.print(
         "Thresholds",
-        ["First minima", hist.first_minima + 1],
         ["Elbow", hist.elbow + 1],
-        ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
+        ["First minima", hist.first_minima + 1],
         ["Weak/solid intersection", x_intersect],
+        ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
     )
-    genome_len = int(hist.total / model.coverage)
     table_printer.print(
-        "Dataset characteristics (estimated)",
+        "Dataset characteristics",
         ["Coverage", f"{model.coverage:.1f}x"],
-        ["Genome length", utils.format_bp(genome_len)],
+        ["Error rate", f"{(1 - num_solid / hist.total) * 100:.3f}%"],
+        ["Genome length", utils.format_bp(int(num_solid / model.coverage))],
     )
     x_min, x_max = args.plot_range or (1, hist.max_count)
-    output.save_plot(
-        hist,
-        model,
-        x_intersect,
-        args.style,
-        args.title,
-        x_min,
-        x_max,
-        args.y_log,
-        args.out_path,
-    )
+    if args.out_path:
+        output.save_plot(
+            hist,
+            model,
+            x_intersect,
+            args.style,
+            args.title,
+            x_min,
+            x_max,
+            args.y_log,
+            args.out_path,
+        )
     return 0
 
 

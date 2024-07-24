@@ -39,11 +39,17 @@ def find_otsu_thresholds(
 
 def format_bp(x):
     units = ["", "K", "M", "G", "T", "P"]
-    magnitude = int(np.log10(x))
-    return f"{x / 10 ** magnitude:.3f}{units[magnitude // 3]}bp"
+    magnitude = int(np.log10(x)) // 3
+    return f"{x / 1000 ** magnitude:.1f} {units[magnitude]}bp"
 
 
 def kl_div(hist, model):
     p = model.pdf(np.arange(1, hist.max_count + 1))
     q = hist.as_distribution()
     return scipy.stats.entropy(p, q)
+
+
+def count_solid_kmers(hist, model):
+    x = np.arange(1, hist.max_count + 1)
+    p = model.score_components(x)[0, :]
+    return hist.total - int((x * p * hist.values).sum())
