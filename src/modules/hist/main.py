@@ -28,6 +28,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         f"{', '.join(plt.style.available)}",
         default="ntstat.hist.default",
     )
+    parser.add_argument("-t", "--title", help="title to put on plot")
     parser.add_argument(
         "--y-log",
         help="plot y-axis in log scale",
@@ -100,6 +101,7 @@ def run(cmd_args: list[str]) -> int:
         model,
         x_intersect,
         args.style,
+        args.title,
         x_min,
         x_max,
         args.y_log,

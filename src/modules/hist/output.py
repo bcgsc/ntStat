@@ -54,6 +54,7 @@ def save_plot(
     model: Model,
     x_intersect: int,
     style: str,
+    title: str,
     x_min: int,
     x_max: int,
     y_log: bool,
@@ -63,6 +64,7 @@ def save_plot(
     plt.style.use(style)
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     fig, ax = plt.subplots()
+    ax.set_title(title)
     ax.set_yscale("log" if y_log else ax.get_yscale())
     ax.set_xlabel("K-mer count")
     ax.set_ylabel("Frequency")
