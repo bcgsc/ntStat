@@ -37,32 +37,13 @@ def find_otsu_thresholds(
     return skimage.filters.threshold_multiotsu(hist=hist)
 
 
-def get_coverage(gmm_rv: list[scipy.stats.rv_continuous]) -> float:
-    return max(gmm_rv[0].args[0], gmm_rv[1].args[0])
-
-
 def format_bp(x):
     units = ["", "K", "M", "G", "T", "P"]
     magnitude = int(np.log10(x))
     return f"{x / 10 ** magnitude:.3f}{units[magnitude // 3]}bp"
 
 
-def gmm(
-    x: numpy.typing.NDArray[np.float64],
-    w1: float,
-    mu1: float,
-    sigma1: float,
-    w2: float,
-    mu2: float,
-    sigma2: float,
-) -> numpy.typing.NDArray[np.float64]:
-    p1 = scipy.stats.norm.pdf(x, mu1, sigma1)
-    p2 = scipy.stats.norm.pdf(x, mu2, sigma2)
-    return w1 * p1 + w2 * p2
-
-
-def find_intersection(
-    y1: numpy.typing.NDArray[np.float64],
-    y2: numpy.typing.NDArray[np.float64],
-) -> int:
-    return np.where(y2 >= y1)[0][0]
+def kl_div(hist, model):
+    p = model.pdf(np.arange(1, hist.max_count + 1))
+    q = hist.as_distribution()
+    return scipy.stats.entropy(p, q)

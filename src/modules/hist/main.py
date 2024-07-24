@@ -7,6 +7,7 @@ import numpy as np
 import output
 import utils
 from histogram import NtCardHistogram
+from model import Model
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -51,8 +52,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
-    err_rv, err_num_iters = hist.fit_err()
-    gmm_rv, gmm_w, gmm_num_iters = hist.fit_gmm(err_rv)
+    model = Model()
+    num_iters = model.fit(hist)
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
     table_printer = output.TablePrinter(args.table_format)
@@ -67,37 +68,37 @@ def run(cmd_args: list[str]) -> int:
     )
     table_printer.print(
         "Fitted model",
-        ["Error distribution", utils.scipy_rv_to_string(err_rv)],
-        [f"Heterozygous (w = {gmm_w[0]:.2f})", utils.scipy_rv_to_string(gmm_rv[0])],
-        [f"Homozygous   (w = {gmm_w[1]:.2f})", utils.scipy_rv_to_string(gmm_rv[1])],
-        ["Number of iterations", err_num_iters + gmm_num_iters],
-        [f"KL Divergence", hist.kl_div(err_rv, gmm_rv, gmm_w)],
+        ["Error distribution", utils.scipy_rv_to_string(model.err_rv)],
+        [
+            f"Heterozygous (w = {model.heterozygous_rv[0]:.2f})",
+            utils.scipy_rv_to_string(model.heterozygous_rv[1]),
+        ],
+        [
+            f"Homozygous   (w = {model.homozygous_rv[0]:.2f})",
+            utils.scipy_rv_to_string(model.homozygous_rv[1]),
+        ],
+        ["Number of iterations", num_iters],
+        [f"KL Divergence", utils.kl_div(hist, model)],
     )
-    x = np.arange(1, hist.max_count + 1)
-    y_err = err_rv.pdf(x)
-    y_gmm = gmm_w[0] * gmm_rv[0].pdf(x) + gmm_w[1] * gmm_rv[1].pdf(x)
-    x_intersect = utils.find_intersection(y_err, y_gmm) + 1
+    x_intersect = model.get_solid_weak_intersection(np.arange(1, hist.max_count + 1))
     table_printer.print(
         "Thresholds",
         ["First minima", hist.first_minima + 1],
         ["Elbow", hist.elbow + 1],
         ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
-        ["Weak/solid intersection", x_intersect + 1],
+        ["Weak/solid intersection", x_intersect],
     )
-    cov = utils.get_coverage(gmm_rv)
-    genome_len = int(hist.total / cov)
+    genome_len = int(hist.total / model.coverage)
     table_printer.print(
         "Dataset characteristics (estimated)",
-        ["Coverage", f"{cov:.1f}x"],
+        ["Coverage", f"{model.coverage:.1f}x"],
         ["Genome length", utils.format_bp(genome_len)],
     )
     x_min, x_max = args.plot_range or (1, hist.max_count)
     plot_path = os.path.join(args.out_path, "plot.png")
     output.save_plot(
         hist,
-        err_rv,
-        gmm_rv,
-        gmm_w,
+        model,
         x_intersect,
         args.style,
         x_min,

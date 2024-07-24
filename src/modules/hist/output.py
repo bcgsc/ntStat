@@ -5,10 +5,10 @@ import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing
-import scipy.stats
 import tabulate
 import termplotlib as tpl
 from histogram import NtCardHistogram
+from model import Model
 
 
 class TablePrinter:
@@ -51,9 +51,7 @@ def print_hist(hist: numpy.typing.NDArray[np.uint64]) -> None:
 
 def save_plot(
     hist: NtCardHistogram,
-    err_rv: scipy.stats.rv_continuous,
-    gmm_rv: list[scipy.stats.rv_continuous],
-    gmm_w: list[float],
+    model: Model,
     x_intersect: int,
     style: str,
     x_min: int,
@@ -68,20 +66,15 @@ def save_plot(
     ax.set_yscale("log" if y_log else ax.get_yscale())
     ax.set_xlabel("K-mer count")
     ax.set_ylabel("Frequency")
-    norm = hist.values.sum()
-    y_err = err_rv.pdf(x_range) * norm
-    y_h0 = gmm_w[0] * gmm_rv[0].pdf(x_range) * norm
-    y_h1 = gmm_w[1] * gmm_rv[1].pdf(x_range) * norm
-    y_gmm = y_h0 + y_h1
-    y_fitted = y_err + y_gmm
+    y_model = model.score_components(x_range) * hist.values.sum()
     bars = ax.bar(x_range, hist.values[x_range - 1])
     plt.plot([], [])  # shift the color map
-    ax.plot(x_range, y_err, label=f"Weak k-mers ({err_rv.dist.name})")
-    ax.plot(x_range, y_gmm, label="Solid k-mers")
-    ax.plot(x_range, y_fitted, label="Fitted model", linestyle="--", linewidth=2.5)
+    ax.plot(x_range, y_model[0, :], label=f"Weak k-mers")
+    ax.plot(x_range, y_model[1:, :].sum(axis=0), label="Solid k-mers")
+    ax.plot(x_range, y_model.sum(axis=0), label="Fitted model", ls="--", lw=2.5)
     thresholds = {
-        "Heterozygous peak": np.rint(gmm_rv[0].args[0]).astype(int),
-        "Homozygous peak": np.rint(gmm_rv[1].args[0]).astype(int),
+        "Heterozygous peak": np.rint(model.peaks[0]).astype(int),
+        "Homozygous peak": np.rint(model.peaks[1]).astype(int),
         "First minima": hist.first_minima + 1,
         "Weak/solid intersection": x_intersect,
     }
