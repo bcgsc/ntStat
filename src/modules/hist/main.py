@@ -43,7 +43,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "-o",
         "--out-path",
-        help="path to output directory",
+        help="path to output plot",
         default=".",
     )
     return parser.parse_args(argv)
@@ -95,7 +95,6 @@ def run(cmd_args: list[str]) -> int:
         ["Genome length", utils.format_bp(genome_len)],
     )
     x_min, x_max = args.plot_range or (1, hist.max_count)
-    plot_path = os.path.join(args.out_path, "plot.png")
     output.save_plot(
         hist,
         model,
@@ -104,9 +103,8 @@ def run(cmd_args: list[str]) -> int:
         x_min,
         x_max,
         args.y_log,
-        plot_path,
+        args.out_path,
     )
-    print(f"Saved plot to {plot_path}")
     return 0
 
 
