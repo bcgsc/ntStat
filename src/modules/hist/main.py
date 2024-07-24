@@ -85,8 +85,9 @@ def run(cmd_args: list[str]) -> int:
     table_printer.print(
         "Dataset characteristics",
         ["Coverage", f"{model.coverage:.1f}x"],
-        ["Error rate", f"{(1 - num_solid / hist.total) * 100:.3f}%"],
-        ["Genome length", utils.format_bp(int(num_solid / model.coverage))],
+        ["Error rate", f"{(1 - num_solid / hist.total) * 100:.1f}%"],
+        ["Genome size", utils.format_bp(int(hist.total / model.coverage))],
+        ["Total size", f"{utils.format_bp(hist.total)}"],
     )
     x_min, x_max = args.plot_range or (1, hist.max_count)
     if args.out_path:

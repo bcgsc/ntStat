@@ -17,7 +17,7 @@ def validate_plot_range_str(r_str: str) -> tuple[int, int]:
 
 
 def scipy_rv_to_string(rv: scipy.stats.rv_continuous | scipy.stats.rv_discrete):
-    dist_args_str = ", ".join(f"{x:.1f}" for x in rv.args)
+    dist_args_str = ", ".join(f"{x:.3f}" for x in rv.args)
     return f"X ~ {rv.dist.name.title()}({dist_args_str})"
 
 
