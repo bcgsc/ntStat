@@ -57,7 +57,7 @@ class Model:
         y = hist.as_distribution()
         err_rv = scipy.stats.burr
         p_err, _, info, *_ = scipy.optimize.curve_fit(
-            err_rv.pdf, x, y, [1, 1, 1], full_output=True
+            err_rv.pdf, x, y, [0.5, 0.5, 0.5], full_output=True, maxfev=5000
         )
         self.__err_rv = err_rv(*p_err)
         num_iters += info["nfev"]

@@ -13,6 +13,7 @@ from model import Model
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="k-mer spectrum file")
+    parser.add_argument("-k", "--kmer-size", help="k-mer size", type=int, required=True)
     parser.add_argument(
         "-f",
         "--table-format",
@@ -82,13 +83,13 @@ def run(cmd_args: list[str]) -> int:
         ["Weak/solid intersection", x_intersect],
         ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
     )
-    table_printer.print(
-        "Dataset characteristics",
+    dataset_table_rows = [
         ["Coverage", f"{model.coverage:.1f}x"],
-        ["Error rate", f"{(1 - num_solid / hist.total) * 100:.1f}%"],
+        ["Error rate", f"{(1 - num_solid / hist.total) * 100 / args.kmer_size:.1f}%"],
         ["Genome size", utils.format_bp(int(hist.total / model.coverage))],
         ["Total size", f"{utils.format_bp(hist.total)}"],
-    )
+    ]
+    table_printer.print("Dataset characteristics", *dataset_table_rows)
     x_min, x_max = args.plot_range or (1, hist.max_count)
     if args.out_path:
         output.save_plot(
@@ -97,6 +98,7 @@ def run(cmd_args: list[str]) -> int:
             x_intersect,
             args.style,
             args.title,
+            dataset_table_rows,
             x_min,
             x_max,
             args.y_log,

@@ -1,5 +1,5 @@
 figure.dpi: 300
-figure.figsize: 7, 5
+figure.figsize: 6.5, 4
 figure.autolayout: True
 
 axes.facecolor: EBF1F5
@@ -7,6 +7,7 @@ axes.edgecolor: black
 axes.prop_cycle: cycler("color", ["CFD8DD","ce4e77","23a4e0","292f36","B4ADCB","e094a0","DFC997","ACC59C"])
 axes.grid: True
 axes.axisbelow: True
+axes.titlelocation: left
 
 grid.color: fffdf7
 grid.linestyle: -
