@@ -70,7 +70,7 @@ def save_plot(
     ax1.set_xlabel("K-mer count")
     ax1.set_ylabel("Frequency")
     y_model = model.score_components(x_range) * hist.values.sum()
-    bars = ax1.bar(x_range, hist.values[x_range - 1], label="Histogram")
+    bars = ax1.bar(x_range, hist.values[x_range - 1], width=1, label="Histogram")
     ax1.plot([], [])  # shift the color map
     ax1.plot(x_range, y_model[0, :], label=f"Weak k-mers")
     ax1.plot(x_range, y_model[1:, :].sum(axis=0), label="Solid k-mers")
