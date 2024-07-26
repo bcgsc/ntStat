@@ -51,31 +51,30 @@ def run(cmd_args: list[str]) -> int:
     hist = NtCardHistogram(args.path)
     model = Model()
     num_iters = model.fit(hist)
+    w_het, rv_het = model.heterozygous_rv
+    w_hom, rv_hom = model.homozygous_rv
+    num_solid = utils.count_solid_kmers(hist, model)
+    err_rate = utils.get_error_rate(num_solid, hist.num_total, args.kmer_size)
+    x_intersect = model.get_solid_weak_intersection(np.arange(1, hist.max_count + 1))
+
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
+
     table_printer = output.TablePrinter(args.table_format)
     table_printer.print(
         "Fitted model",
         ["Error distribution", utils.scipy_rv_to_string(model.err_rv)],
-        [
-            f"Heterozygous (w = {model.heterozygous_rv[0]:.2f})",
-            utils.scipy_rv_to_string(model.heterozygous_rv[1]),
-        ],
-        [
-            f"Homozygous   (w = {model.homozygous_rv[0]:.2f})",
-            utils.scipy_rv_to_string(model.homozygous_rv[1]),
-        ],
+        [f"Heterozygous (w = {w_het:.3f})", utils.scipy_rv_to_string(rv_het)],
+        [f"Homozygous   (w = {w_hom:.3f})", utils.scipy_rv_to_string(rv_hom)],
         ["Number of iterations", num_iters],
         [f"KL Divergence", utils.kl_div(hist, model)],
     )
-    num_solid = utils.count_solid_kmers(hist, model)
     table_printer.print(
         "k-mer statistics",
-        ["Total number of k-mers", hist.total],
-        ["Number of distinct k-mers", hist.distinct],
+        ["Total number of k-mers", hist.num_total],
+        ["Number of distinct k-mers", hist.num_distinct],
         ["Number of solid k-mers", num_solid],
     )
-    x_intersect = model.get_solid_weak_intersection(np.arange(1, hist.max_count + 1))
     table_printer.print(
         "Thresholds",
         ["Elbow", hist.elbow + 1],
@@ -85,12 +84,12 @@ def run(cmd_args: list[str]) -> int:
     )
     dataset_table_rows = [
         ["Coverage", f"{model.coverage:.1f}x"],
-        ["Error rate", f"{(1 - num_solid / hist.total) * 100 / args.kmer_size:.1f}%"],
-        ["Genome size", utils.format_bp(int(hist.total / model.coverage))],
-        ["Total size", f"{utils.format_bp(hist.total)}"],
+        ["Error rate", f"{err_rate:.1f}%"],
+        ["Genome size", utils.format_bp(int(hist.num_total / model.coverage))],
+        ["Total size", f"{utils.format_bp(hist.num_total)}"],
     ]
     table_printer.print("Dataset characteristics", *dataset_table_rows)
-    x_min, x_max = args.plot_range or (1, hist.max_count)
+
     if args.out_path:
         output.save_plot(
             hist,
@@ -99,8 +98,7 @@ def run(cmd_args: list[str]) -> int:
             args.style,
             args.title,
             dataset_table_rows,
-            x_min,
-            x_max,
+            args.plot_range or (1, hist.max_count),
             args.y_log,
             args.out_path,
         )

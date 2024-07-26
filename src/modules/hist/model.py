@@ -62,7 +62,7 @@ class Model:
         self.__err_rv = err_rv(*p_err)
         num_iters += info["nfev"]
         y = np.clip(hist.as_distribution() - self.__err_rv.pdf(x), 0, None)
-        d = skimage.filters.threshold_multiotsu(hist=(hist.values, x - 1))[-1]
+        d = skimage.filters.threshold_multiotsu(hist=(y, x))[-1]
         p0 = [0.5, d / 2, 1, 0.5, d, 1]
         p, _, info, *_ = scipy.optimize.curve_fit(
             gmm, x, y, p0, full_output=True, maxfev=5000

@@ -27,11 +27,11 @@ class NtCardHistogram:
         return self.__hist
 
     @property
-    def total(self) -> int:
+    def num_total(self) -> int:
         return self.__total
 
     @property
-    def distinct(self) -> int:
+    def num_distinct(self) -> int:
         return self.__distinct
 
     @property
@@ -51,4 +51,4 @@ class NtCardHistogram:
         return self.__otsu
 
     def as_distribution(self) -> numpy.typing.NDArray[np.float64]:
-        return self.values / self.values.sum()
+        return self.values / self.num_total

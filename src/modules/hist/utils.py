@@ -52,4 +52,8 @@ def kl_div(hist, model):
 def count_solid_kmers(hist, model):
     x = np.arange(1, hist.max_count + 1)
     p = model.score_components(x)[0, :]
-    return hist.total - int((x * p * hist.values).sum())
+    return hist.num_total - int((x * p * hist.values).sum())
+
+
+def get_error_rate(num_solid: int, num_total: int, kmer_size: int) -> float:
+    return (1 - num_solid / num_total) * 100 / kmer_size
