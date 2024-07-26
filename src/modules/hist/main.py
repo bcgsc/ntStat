@@ -84,7 +84,8 @@ def run(cmd_args: list[str]) -> int:
     )
     dataset_table_rows = [
         ["Coverage", f"{model.coverage:.1f}x"],
-        ["Error rate", f"{err_rate:.1f}%"],
+        ["Error rate", f"{err_rate * 100:.2f}%"],
+        ["Quality score", f"Q{int(-10 * np.log10(err_rate))}"],
         ["Genome size", utils.format_bp(int(hist.num_total / model.coverage))],
         ["Total size", f"{utils.format_bp(hist.num_total)}"],
     ]
