@@ -63,11 +63,11 @@ def run(cmd_args: list[str]) -> int:
     table_printer = output.TablePrinter(args.table_format)
     table_printer.print(
         "Fitted model",
-        ["Error distribution", utils.scipy_rv_to_string(model.err_rv)],
-        [f"Heterozygous (w = {w_het:.3f})", utils.scipy_rv_to_string(rv_het)],
-        [f"Homozygous   (w = {w_hom:.3f})", utils.scipy_rv_to_string(rv_hom)],
+        ["Errors", "1.000 * " + utils.scipy_rv_to_string(model.err_rv)],
+        [f"Heterozygous", f"{w_het:.3f} * " + utils.scipy_rv_to_string(rv_het)],
+        [f"Homozygous", f"{w_hom:.3f} * " + utils.scipy_rv_to_string(rv_hom)],
         ["Number of iterations", num_iters],
-        [f"KL Divergence", utils.kl_div(hist, model)],
+        [f"KL Divergence", utils.format_float(utils.kl_div(hist, model))],
     )
     table_printer.print(
         "k-mer statistics",

@@ -18,7 +18,7 @@ def validate_plot_range_str(r_str: str) -> tuple[int, int]:
 
 def scipy_rv_to_string(rv: scipy.stats.rv_continuous | scipy.stats.rv_discrete):
     dist_args_str = ", ".join(f"{x:.3f}" for x in rv.args)
-    return f"X ~ {rv.dist.name.title()}({dist_args_str})"
+    return f"{rv.dist.name.title()}({dist_args_str})"
 
 
 def find_first_minima(hist: numpy.typing.NDArray[np.uint64]) -> int:
@@ -35,6 +35,11 @@ def find_otsu_thresholds(
     hist: numpy.typing.NDArray[np.uint64],
 ) -> numpy.typing.NDArray[np.uint]:
     return skimage.filters.threshold_multiotsu(hist=hist)
+
+
+def format_float(x):
+    d = np.floor(np.log10(x))
+    return f"{x:.{-int(d)}f}"
 
 
 def format_bp(x):
