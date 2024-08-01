@@ -59,7 +59,7 @@ def run(cmd_args: list[str]) -> int:
     w_het, rv_het = model.heterozygous_rv
     w_hom, rv_hom = model.homozygous_rv
     num_solid = utils.count_solid_kmers(hist, model)
-    err_rate = utils.get_error_rate(num_solid, hist.num_total, args.kmer_size)
+    err_rate = utils.get_error_rate(num_solid, hist.num_total)
     x_intersect = model.get_solid_weak_intersection(np.arange(1, hist.max_count + 1))
 
     print("Histogram shape (y-axis in log scale):")

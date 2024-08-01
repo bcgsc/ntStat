@@ -60,5 +60,5 @@ def count_solid_kmers(hist, model):
     return hist.num_total - int((x * p * hist.values).sum())
 
 
-def get_error_rate(num_solid: int, num_total: int, kmer_size: int) -> float:
-    return (1 - num_solid / num_total) / kmer_size
+def get_error_rate(num_solid: int, num_total: int) -> float:
+    return (1 - num_solid / num_total)
