@@ -9,11 +9,13 @@ import scipy.stats
 import skimage.filters
 
 
-def validate_plot_range_str(r_str: str) -> tuple[int, int]:
+def validate_plot_range_str(r_str: str) -> list[int, int]:
+    if r_str == "auto":
+        return [1, 0]
     pattern = re.compile(r"^\d+:\d+$")
     if not pattern.match(r_str):
         raise argparse.ArgumentTypeError("invalid value")
-    return tuple(map(int, r_str.split(":")))
+    return list(map(int, r_str.split(":")))
 
 
 def scipy_rv_to_string(rv: scipy.stats.rv_continuous | scipy.stats.rv_discrete):

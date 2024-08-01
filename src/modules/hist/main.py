@@ -37,8 +37,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "-r",
         "--plot-range",
-        help="x-axis limits in plots separated by a colon, "
-        "i.e., use a:b to show results in the range a:b",
+        help="plot x-axis limits (inclusive) separated by a colon, "
+        "i.e., use a:b to show results in the range [a, b]. "
+        "'auto' will automatically adjust the limits for better visibility.",
         type=utils.validate_plot_range_str,
     )
     parser.add_argument("-o", "--out-path", help="path to output plot")
@@ -98,6 +99,12 @@ def run(cmd_args: list[str]) -> int:
     ]
     table_printer.print("Dataset characteristics", *dataset_table_rows)
 
+    plot_range = args.plot_range or (1, hist.max_count + 1)
+    if plot_range[1] == 0:
+        m_hom, s_hom = model.homozygous_rv[1].args
+        plot_range[1] = int(m_hom + 3 * s_hom)
+    plot_range[1] = min(plot_range[1], hist.max_count + 1)
+
     if args.out_path:
         output.save_plot(
             hist,
@@ -107,7 +114,7 @@ def run(cmd_args: list[str]) -> int:
             args.style,
             args.title,
             dataset_table_rows,
-            args.plot_range or (1, hist.max_count),
+            plot_range,
             args.y_log,
             args.out_path,
         )
