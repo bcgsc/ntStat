@@ -76,7 +76,8 @@ class Model:
         p, _, info, *_ = scipy.optimize.curve_fit(
             gmm, x, y, full_output=True, p0=p0, bounds=b, maxfev=Model.MAX_ITERS
         )
-        self.__het = (p[0], scipy.stats.norm(p[1], p[2]))
-        self.__hom = (p[3], scipy.stats.norm(p[4], p[5]))
+        c1 = (p[0], scipy.stats.norm(p[1], p[2])) 
+        c2 = (p[3], scipy.stats.norm(p[4], p[5]))
+        self.__het, self.__hom = (c1, c2) if p[1] < p[2] else (c2, c1)
         num_iters += info["nfev"]
         return num_iters
