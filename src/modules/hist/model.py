@@ -2,7 +2,6 @@ import numpy as np
 import scipy.optimize
 import scipy.special
 import scipy.stats
-import skimage.filters
 from histogram import NtCardHistogram
 
 
@@ -72,11 +71,11 @@ class Model:
         num_iters += info["nfev"]
         x = np.arange(hist.first_minima + 1, hist.max_count + 1)
         y = np.clip(hist.as_distribution()[x - 1] - self.__err_rv.pdf(x), 0, None)
+        b = ([0] * 6, [1, hist.max_count, np.inf, 1, hist.max_count, np.inf])
         p0 = [0.5, hist.otsu_thresholds[0], 1, 0.5, hist.otsu_thresholds[1], 1]
         p, _, info, *_ = scipy.optimize.curve_fit(
-            gmm, x, y, full_output=True, p0=p0, maxfev=Model.MAX_ITERS
+            gmm, x, y, full_output=True, p0=p0, bounds=b, maxfev=Model.MAX_ITERS
         )
-        i = len(p) // 2
         self.__het = (p[0], scipy.stats.norm(p[1], p[2]))
         self.__hom = (p[3], scipy.stats.norm(p[4], p[5]))
         num_iters += info["nfev"]
