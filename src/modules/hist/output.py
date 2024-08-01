@@ -52,6 +52,7 @@ def print_hist(hist: numpy.typing.NDArray[np.uint64]) -> None:
 def save_plot(
     hist: NtCardHistogram,
     model: Model,
+    kmer_size: int,
     x_intersect: int,
     style: str,
     title: str,
@@ -65,7 +66,7 @@ def save_plot(
     fig, ax = plt.subplots()
     ax.set_title(title)
     ax.set_yscale("log" if y_log else ax.get_yscale())
-    ax.set_xlabel("K-mer count")
+    ax.set_xlabel(f"$k$-mer count ($k$ = {kmer_size})")
     ax.set_ylabel("Frequency")
     y_model = model.score_components(x_range) * hist.num_total
     bars = ax.bar(x_range, hist.values[x_range - 1], width=1, label="Histogram")

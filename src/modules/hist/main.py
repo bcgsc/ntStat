@@ -100,6 +100,7 @@ def run(cmd_args: list[str]) -> int:
         output.save_plot(
             hist,
             model,
+            args.kmer_size,
             x_intersect,
             args.style,
             args.title,
