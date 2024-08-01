@@ -51,7 +51,7 @@ class Model:
         scores[2, :] = w_hom * rv_hom.pdf(x)
         return scores
 
-    def get_solid_weak_intersection(self, x):
+    def get_weak_robust_crossover(self, x):
         scores = self.score_components(x)
         y1 = scores[0, :].reshape(-1)
         y2 = scores[1:, :].sum(axis=0).reshape(-1)

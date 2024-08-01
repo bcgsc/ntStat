@@ -72,14 +72,14 @@ def save_plot(
     bars = ax.bar(x_range, hist.values[x_range - 1], width=1, label="Histogram")
     ax.plot([], [])  # shift the color map
     ax.plot(x_range, y_model[0, :], label=f"Weak k-mers")
-    ax.plot(x_range, y_model[1:, :].sum(axis=0), label="Solid k-mers")
+    ax.plot(x_range, y_model[1:, :].sum(axis=0), label="Robust k-mers")
     ax.plot(x_range, y_model.sum(axis=0), label="Fitted model", ls="--", lw=2.5)
     ax.set_ylim(bottom=1)
     thresholds = {
         "Heterozygous peak": np.rint(model.peaks[0]).astype(int),
         "Homozygous peak": np.rint(model.peaks[1]).astype(int),
         "First minima": hist.first_minima + 1,
-        "Weak/solid intersection": x_intersect,
+        "Weak/robust crossover": x_intersect,
     }
     handles, labels = ax.get_legend_handles_labels()
     handles.insert(0, matplotlib.lines.Line2D([], [], linestyle=""))

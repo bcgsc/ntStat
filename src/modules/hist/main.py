@@ -59,9 +59,9 @@ def run(cmd_args: list[str]) -> int:
         raise RuntimeError(f"Model did not converge after {Model.MAX_ITERS} iterations")
     w_het, rv_het = model.heterozygous_rv
     w_hom, rv_hom = model.homozygous_rv
-    num_solid = utils.count_solid_kmers(hist, model)
-    err_rate = utils.get_error_rate(num_solid, hist.num_total)
-    x_intersect = model.get_solid_weak_intersection(np.arange(1, hist.max_count + 1))
+    num_robust = utils.count_robust_kmers(hist, model)
+    err_rate = utils.get_error_rate(num_robust, hist.num_total)
+    x_crossover = model.get_weak_robust_crossover(np.arange(1, hist.max_count + 1))
 
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
@@ -79,13 +79,13 @@ def run(cmd_args: list[str]) -> int:
         "K-mer statistics",
         ["Total number of k-mers", hist.num_total],
         ["Number of distinct k-mers", hist.num_distinct],
-        ["Number of solid k-mers", num_solid],
+        ["Number of robust k-mers", num_robust],
     )
     table_printer.print(
         "Thresholds",
         ["Elbow", hist.elbow + 1],
         ["First minima", hist.first_minima + 1],
-        ["Weak/solid intersection", x_intersect],
+        ["Weak/robust crossover", x_crossover],
         ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
         ["Heterozygous peak", np.rint(model.peaks[0]).astype(int)],
         ["Homozygous peak", np.rint(model.peaks[1]).astype(int)],
@@ -110,7 +110,7 @@ def run(cmd_args: list[str]) -> int:
             hist,
             model,
             args.kmer_size,
-            x_intersect,
+            x_crossover,
             args.style,
             args.title,
             dataset_table_rows,
