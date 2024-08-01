@@ -1,5 +1,4 @@
 import argparse
-import os
 import sys
 
 import matplotlib.pyplot as plt
@@ -50,7 +49,13 @@ def run(cmd_args: list[str]) -> int:
     args = parse_args(cmd_args)
     hist = NtCardHistogram(args.path)
     model = Model()
-    num_iters = model.fit(hist)
+    try:
+        num_iters = model.fit(hist)
+    except RuntimeError:
+        raise RuntimeError(f"Model did not converge after {Model.MAX_ITERS} iterations")
+    kl_div = utils.kl_div(hist, model)
+    if not np.isfinite(kl_div):
+        raise RuntimeError(f"Model did not converge after {Model.MAX_ITERS} iterations")
     w_het, rv_het = model.heterozygous_rv
     w_hom, rv_hom = model.homozygous_rv
     num_solid = utils.count_solid_kmers(hist, model)
@@ -67,7 +72,7 @@ def run(cmd_args: list[str]) -> int:
         [f"Heterozygous", f"{w_het:.3f} * " + utils.scipy_rv_to_string(rv_het)],
         [f"Homozygous", f"{w_hom:.3f} * " + utils.scipy_rv_to_string(rv_hom)],
         ["Number of iterations", num_iters],
-        [f"KL Divergence", utils.format_float(utils.kl_div(hist, model))],
+        [f"KL Divergence", utils.format_float(kl_div)],
     )
     table_printer.print(
         "k-mer statistics",

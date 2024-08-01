@@ -14,6 +14,8 @@ def gmm(x, w1, a1, m1, s1, w2, a2, m2, s2):
 
 class Model:
 
+    MAX_ITERS = 5000
+
     @property
     def err_rv(self):
         return self.__err_rv
@@ -74,7 +76,7 @@ class Model:
         b[0][2], b[1][2] = hist.first_minima, 2 * d / 2 - hist.first_minima
         b[0][6], b[1][6] = d / 2, 3 * d / 2
         p, _, info, *_ = scipy.optimize.curve_fit(
-            gmm, x, y, bounds=b, method="trf", full_output=True, maxfev=5000
+            gmm, x, y, bounds=b, method="trf", full_output=True, maxfev=Model.MAX_ITERS
         )
         i = len(p) // 2
         self.__het = (p[0], scipy.stats.skewnorm(*p[1:i]))
