@@ -6,9 +6,9 @@ import skimage.filters
 from histogram import NtCardHistogram
 
 
-def gmm(x, w1, a1, m1, s1, w2, a2, m2, s2):
-    p1 = scipy.stats.skewnorm.pdf(x, a1, m1, s1)
-    p2 = scipy.stats.skewnorm.pdf(x, a2, m2, s2)
+def gmm(x, w1, m1, s1, w2, m2, s2):
+    p1 = scipy.stats.norm.pdf(x, m1, s1)
+    p2 = scipy.stats.norm.pdf(x, m2, s2)
     return w1 * p1 + w2 * p2
 
 
@@ -72,12 +72,12 @@ class Model:
         num_iters += info["nfev"]
         x = np.arange(hist.first_minima + 1, hist.max_count + 1)
         y = np.clip(hist.as_distribution()[x - 1] - self.__err_rv.pdf(x), 0, None)
-        p0 = [0.5, 1, hist.otsu_thresholds[0], 1, 0.5, 1, hist.otsu_thresholds[1], 1]
+        p0 = [0.5, hist.otsu_thresholds[0], 1, 0.5, hist.otsu_thresholds[1], 1]
         p, _, info, *_ = scipy.optimize.curve_fit(
             gmm, x, y, full_output=True, p0=p0, maxfev=Model.MAX_ITERS
         )
         i = len(p) // 2
-        self.__het = (p[0], scipy.stats.skewnorm(*p[1:i]))
-        self.__hom = (p[i], scipy.stats.skewnorm(*p[i + 1 :]))
+        self.__het = (p[0], scipy.stats.norm(p[1], p[2]))
+        self.__hom = (p[3], scipy.stats.norm(p[4], p[5]))
         num_iters += info["nfev"]
         return num_iters
