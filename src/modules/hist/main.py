@@ -75,7 +75,7 @@ def run(cmd_args: list[str]) -> int:
         [f"KL Divergence", utils.format_float(kl_div)],
     )
     table_printer.print(
-        "k-mer statistics",
+        "K-mer statistics",
         ["Total number of k-mers", hist.num_total],
         ["Number of distinct k-mers", hist.num_distinct],
         ["Number of solid k-mers", num_solid],
@@ -86,6 +86,8 @@ def run(cmd_args: list[str]) -> int:
         ["First minima", hist.first_minima + 1],
         ["Weak/solid intersection", x_intersect],
         ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
+        ["Heterozygous peak", np.rint(model.peaks[0]).astype(int)],
+        ["Homozygous peak", np.rint(model.peaks[1]).astype(int)],
     )
     dataset_table_rows = [
         ["Coverage", f"{model.coverage:.1f}x"],
