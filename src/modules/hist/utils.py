@@ -69,5 +69,6 @@ def get_error_rate(num_robust: int, num_total: int) -> float:
 def get_heterozygosity(hist, model):
     x = np.arange(1, hist.max_count + 1)
     p = model.score_components(x)[1, :]
-    num_het = hist.num_total - int((x * p * hist.values).sum())
-    return num_het / hist.num_total
+    num_het = int((x * p * hist.values).sum())
+    num_robust = count_robust_kmers(hist, model)
+    return num_het / num_robust

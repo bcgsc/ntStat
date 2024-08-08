@@ -96,7 +96,7 @@ def run(cmd_args: list[str]) -> int:
         ["Error rate", f"{err_rate * 100:.2f}%"],
         ["Quality score", f"Q{int(-10 * np.log10(err_rate))}"],
         ["Dataset size", f"{utils.format_bp(hist.num_total)}"],
-        ["Heterozygosity", f"{heterozygosity * 100:.2f}%"],
+        ["Heterozygosity", f"{heterozygosity * 100:.3f}%"],
         ["Genome size", utils.format_bp(int(hist.num_total / model.coverage))],
     ]
     table_printer.print("Dataset characteristics", *dataset_table_rows)
