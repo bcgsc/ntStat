@@ -61,6 +61,7 @@ def run(cmd_args: list[str]) -> int:
     w_hom, rv_hom = model.homozygous_rv
     num_robust = utils.count_robust_kmers(hist, model)
     err_rate = utils.get_error_rate(num_robust, hist.num_total)
+    heterozygosity = utils.get_heterozygosity(hist, model)
     x_crossover = model.get_weak_robust_crossover(np.arange(1, hist.max_count + 1))
 
     print("Histogram shape (y-axis in log scale):")
@@ -94,8 +95,9 @@ def run(cmd_args: list[str]) -> int:
         ["Coverage", f"{model.coverage:.1f}x"],
         ["Error rate", f"{err_rate * 100:.2f}%"],
         ["Quality score", f"Q{int(-10 * np.log10(err_rate))}"],
+        ["Dataset size", f"{utils.format_bp(hist.num_total)}"],
+        ["Heterozygosity", f"{heterozygosity * 100:.2f}%"],
         ["Genome size", utils.format_bp(int(hist.num_total / model.coverage))],
-        ["Total size", f"{utils.format_bp(hist.num_total)}"],
     ]
     table_printer.print("Dataset characteristics", *dataset_table_rows)
 
