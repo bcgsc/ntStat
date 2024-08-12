@@ -1,8 +1,6 @@
 import numpy as np
 import numpy.typing
 import pandas as pd
-import scipy.stats
-import skimage.filters
 import utils
 
 

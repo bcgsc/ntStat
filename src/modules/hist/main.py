@@ -42,7 +42,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "'auto' will automatically adjust the limits for better visibility.",
         type=utils.validate_plot_range_str,
     )
-    parser.add_argument("-o", "--out-path", help="path to output plot")
+    parser.add_argument("--plot", help="path to output plot")
+    parser.add_argument("--probs", help="path to output probabilities in csv format")
     return parser.parse_args(argv)
 
 
@@ -57,6 +58,7 @@ def run(cmd_args: list[str]) -> int:
     kl_div = utils.kl_div(hist, model)
     if not np.isfinite(kl_div):
         raise RuntimeError(f"Model did not converge after {Model.MAX_ITERS} iterations")
+    w_err, rv_err = model.err_rv
     w_het, rv_het = model.heterozygous_rv
     w_hom, rv_hom = model.homozygous_rv
     num_robust = utils.count_robust_kmers(hist, model)
@@ -70,7 +72,7 @@ def run(cmd_args: list[str]) -> int:
     table_printer = output.TablePrinter(args.table_format)
     table_printer.print(
         "Fitted model",
-        ["Errors", "1.000 * " + utils.scipy_rv_to_string(model.err_rv)],
+        ["Errors", f"{w_err} * " + utils.scipy_rv_to_string(rv_err)],
         [f"Heterozygous", f"{w_het:.3f} * " + utils.scipy_rv_to_string(rv_het)],
         [f"Homozygous", f"{w_hom:.3f} * " + utils.scipy_rv_to_string(rv_hom)],
         ["Number of iterations", num_iters],
@@ -107,7 +109,7 @@ def run(cmd_args: list[str]) -> int:
         plot_range[1] = int(m_hom + 3 * s_hom)
     plot_range[1] = min(plot_range[1], hist.max_count + 1)
 
-    if args.out_path:
+    if args.plot:
         output.save_plot(
             hist,
             model,
@@ -118,8 +120,10 @@ def run(cmd_args: list[str]) -> int:
             dataset_table_rows,
             plot_range,
             args.y_log,
-            args.out_path,
+            args.plot,
         )
+    if args.probs:
+        output.save_probs(hist, model, args.probs)
     return 0
 
 

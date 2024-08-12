@@ -5,6 +5,7 @@ import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing
+import pandas as pd
 import tabulate
 import termplotlib as tpl
 from histogram import NtCardHistogram
@@ -104,3 +105,17 @@ def save_plot(
     )
     plt.setp(legend.get_title(), family="Monospace")
     fig.savefig(out_path)
+
+
+def save_probs(hist: NtCardHistogram, model: Model, out_path: str):
+    counts = np.arange(1, hist.max_count + 1)
+    scores = model.score_components(counts)
+    pd.DataFrame.from_dict(
+        {
+            "count": counts,
+            "frequency": hist.values,
+            "error": scores[0, :],
+            "heterozgous": scores[1, :],
+            "homozygous": scores[2, :],
+        }
+    ).to_csv(out_path, index=False)
