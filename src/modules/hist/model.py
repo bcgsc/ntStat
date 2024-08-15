@@ -7,12 +7,17 @@ from histogram import NtCardHistogram
 
 def update_components(components, params):
     updated = []
-    i = 0
+    i_param = 0
+    raw_weights = []
     for _, rv in components:
         n_args = len(rv.args)
-        updated_rv = rv.dist(*params[i + 1 : i + n_args + 1])
-        updated.append((params[i], updated_rv))
-        i += n_args + 1
+        updated_rv = rv.dist(*params[i_param + 1 : i_param + n_args + 1])
+        raw_weights.append(params[i_param])
+        updated.append([0, updated_rv])
+        i_param += n_args + 1
+    weights = scipy.special.softmax(raw_weights)
+    for i_param in range(len(updated)):
+        updated[i_param][0] = weights[i_param]
     return updated
 
 
@@ -77,9 +82,9 @@ class Model:
     def fit(self, hist: NtCardHistogram) -> int:
         self.__hist_max_count = hist.max_count
         components = [
-            (1 / 3, scipy.stats.burr(0.5, 0.5)),
-            (1 / 3, scipy.stats.skewnorm(1, hist.otsu_thresholds[0], 1)),
-            (1 / 3, scipy.stats.skewnorm(1, hist.otsu_thresholds[1], 1)),
+            (1, scipy.stats.burr(0.5, 0.5, 0.5)),
+            (1, scipy.stats.skewnorm(1, hist.otsu_thresholds[0], 1)),
+            (1, scipy.stats.skewnorm(1, hist.otsu_thresholds[1], 1)),
         ]
         p0 = [p for w, rv in components for p in [w] + list(rv.args)]
         p, c, info, *_ = scipy.optimize.curve_fit(
@@ -90,6 +95,5 @@ class Model:
             full_output=True,
             maxfev=Model.MAX_ITERS,
         )
-        print(np.diag(c))
         self.__components = update_components(components, p)
         return info["nfev"]
