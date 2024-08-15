@@ -114,7 +114,7 @@ def run(cmd_args: list[str]) -> int:
 
     plot_range = args.plot_range or [1, hist.max_count + 1]
     if plot_range[1] == 0 and model.converged:
-        _, m_hom, s_hom = model.homozygous_rv[1].args
+        m_hom, s_hom = model.homozygous_rv[1].mean(), model.homozygous_rv[1].std()
         plot_range[1] = int(m_hom + 3 * s_hom)
     elif plot_range[1] == 0:
         plot_range[1] = int(hist.mode_after_first_minima * 3)
