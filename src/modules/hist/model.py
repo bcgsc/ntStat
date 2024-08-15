@@ -8,16 +8,11 @@ from histogram import NtCardHistogram
 def update_components(components, params):
     updated = []
     i_param = 0
-    raw_weights = []
     for _, rv in components:
         n_args = len(rv.args)
         updated_rv = rv.dist(*params[i_param + 1 : i_param + n_args + 1])
-        raw_weights.append(params[i_param])
-        updated.append([0, updated_rv])
+        updated.append([params[i_param], updated_rv])
         i_param += n_args + 1
-    weights = scipy.special.softmax(raw_weights)
-    for i_param in range(len(updated)):
-        updated[i_param][0] = weights[i_param]
     return updated
 
 
@@ -57,11 +52,8 @@ class Model:
 
     @property
     def peaks(self):
-        x = []
-        for _, rv in self.__components[1:]:
-            r = np.linspace(1, self.__hist_max_count + 1, 1_000_000)
-            x.append(r[rv.pdf(r).argmax()])
-        return np.array(x)
+        x = np.linspace(1, self.__hist_max_count + 1, self.__hist_max_count * 10)
+        return x[self.score_components(x)[1:, :].argmax(axis=1)]
 
     def pdf(self, x):
         return self.score_components(x).sum(axis=0)
@@ -83,8 +75,8 @@ class Model:
         self.__hist_max_count = hist.max_count
         components = [
             (1, scipy.stats.burr(0.5, 0.5, 0.5)),
-            (1, scipy.stats.skewnorm(1, hist.otsu_thresholds[0], 1)),
-            (1, scipy.stats.skewnorm(1, hist.otsu_thresholds[1], 1)),
+            (1 / 2, scipy.stats.norm(hist.otsu_thresholds[0], 1)),
+            (1 / 2, scipy.stats.norm(hist.otsu_thresholds[1], 1)),
         ]
         p0 = [p for w, rv in components for p in [w] + list(rv.args)]
         p, c, info, *_ = scipy.optimize.curve_fit(
