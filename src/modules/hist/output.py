@@ -66,22 +66,25 @@ def save_plot(
     plt.style.use(style)
     fig, ax = plt.subplots()
     ax.set_title(title)
-    ax.set_yscale("log" if y_log else ax.get_yscale())
     ax.set_xlabel(f"$k$-mer count ($k$ = {kmer_size})")
     ax.set_ylabel("Frequency")
-    y_model = model.score_components(x_range) * hist.num_total
     bars = ax.bar(x_range, hist.values[x_range - 1], width=1, label="Histogram")
     ax.plot([], [])  # shift the color map
-    ax.plot(x_range, y_model[0, :], label=f"Weak k-mers")
-    ax.plot(x_range, y_model[1:, :].sum(axis=0), label="Robust k-mers")
-    ax.plot(x_range, y_model.sum(axis=0), label="Fitted model", ls="--", lw=2.5)
-    ax.set_ylim(bottom=1)
-    thresholds = {
-        "Heterozygous peak": np.rint(model.peaks[0]).astype(int),
-        "Homozygous peak": np.rint(model.peaks[1]).astype(int),
-        "First minima": hist.first_minima + 1,
-        "Weak/robust crossover": x_intersect,
-    }
+    thresholds = {"First minima": hist.first_minima + 1}
+    if model.converged:
+        y_model = model.score_components(x_range) * hist.num_distinct
+        ax.plot(x_range, y_model[0, :], label=f"Weak k-mers")
+        ax.plot(x_range, y_model[1:, :].sum(axis=0), label="Robust k-mers")
+        ax.plot(x_range, y_model.sum(axis=0), label="Fitted model", ls="--", lw=2.5)
+        thresholds.update(
+            {
+                "Heterozygous peak": np.rint(model.peaks[0]).astype(int),
+                "Homozygous peak": np.rint(model.peaks[1]).astype(int),
+                "Weak/robust crossover": x_intersect,
+            }
+        )
+    else:
+        thresholds.update({"Peak": hist.mode_after_first_minima + 1})
     handles, labels = ax.get_legend_handles_labels()
     handles.insert(0, matplotlib.lines.Line2D([], [], linestyle=""))
     labels.insert(0, "")
@@ -104,6 +107,12 @@ def save_plot(
         alignment="left",
     )
     plt.setp(legend.get_title(), family="Monospace")
+    if y_log:
+        ax.set_yscale("log")
+        ax.relim()
+        ax.autoscale_view()
+    else:
+        ax.set_ylim(top=hist.values[hist.first_minima :].max() * 1.5)
     fig.savefig(out_path)
 
 

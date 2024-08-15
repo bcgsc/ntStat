@@ -45,8 +45,12 @@ class NtCardHistogram:
         return self.__min0
 
     @property
+    def mode_after_first_minima(self) -> int:
+        return self.values[self.first_minima :].argmax() + self.first_minima
+
+    @property
     def otsu_thresholds(self) -> numpy.typing.NDArray[np.uint]:
         return self.__otsu
 
     def as_distribution(self) -> numpy.typing.NDArray[np.float64]:
-        return self.values / self.num_total
+        return self.values / self.num_distinct
