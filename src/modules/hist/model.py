@@ -79,7 +79,7 @@ class Model:
             (1 / 2, scipy.stats.norm(hist.otsu_thresholds[1], 1)),
         ]
         p0 = [p for w, rv in components for p in [w] + list(rv.args)]
-        p, c, info, *_ = scipy.optimize.curve_fit(
+        p, _, info, *_ = scipy.optimize.curve_fit(
             lambda x, *p: pdf(x, update_components(components, p)),
             np.arange(1, hist.max_count + 1),
             hist.as_distribution(),
