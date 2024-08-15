@@ -5,27 +5,46 @@ import scipy.stats
 from histogram import NtCardHistogram
 
 
-def gmm(x, w1, m1, s1, w2, m2, s2):
-    p1 = scipy.stats.norm.pdf(x, m1, s1)
-    p2 = scipy.stats.norm.pdf(x, m2, s2)
-    return w1 * p1 + w2 * p2
+def update_components(components, params):
+    updated = []
+    i = 0
+    for _, rv in components:
+        n_args = len(rv.args)
+        updated_rv = rv.dist(*params[i + 1 : i + n_args + 1])
+        updated.append((params[i], updated_rv))
+        i += n_args + 1
+    return updated
+
+
+def pdf(x, components):
+    y = np.zeros(x.shape)
+    for w, rv in components:
+        y += w * rv.pdf(x)
+    return y
 
 
 class Model:
 
     MAX_ITERS = 5000
 
+    def __init__(self) -> None:
+        self.__components = []
+
+    @property
+    def converged(self) -> bool:
+        return len(self.__components) > 0
+
     @property
     def err_rv(self):
-        return self.__err_rv
+        return self.__components[0]
 
     @property
     def heterozygous_rv(self):
-        return self.__het
+        return self.__components[1]
 
     @property
     def homozygous_rv(self):
-        return self.__hom
+        return self.__components[2]
 
     @property
     def coverage(self):
@@ -34,8 +53,8 @@ class Model:
     @property
     def peaks(self):
         x = []
-        for rv in [self.heterozygous_rv[1], self.homozygous_rv[1]]:
-            r = np.linspace(self.__x_fit[0], self.__x_fit[-1], 1_000_000)
+        for _, rv in self.__components[1:]:
+            r = np.linspace(1, self.__hist_max_count + 1, 1_000_000)
             x.append(r[rv.pdf(r).argmax()])
         return np.array(x)
 
@@ -43,13 +62,9 @@ class Model:
         return self.score_components(x).sum(axis=0)
 
     def score_components(self, x):
-        w_err, rv_err = self.err_rv
-        w_het, rv_het = self.heterozygous_rv
-        w_hom, rv_hom = self.homozygous_rv
-        scores = np.zeros(shape=(3, len(x)))
-        scores[0, :] = w_err * rv_err.pdf(x)
-        scores[1, :] = w_het * rv_het.pdf(x)
-        scores[2, :] = w_hom * rv_hom.pdf(x)
+        scores = np.zeros(shape=(len(self.__components), len(x)))
+        for i, (w, rv) in enumerate(self.__components):
+            scores[i, :] = w * rv.pdf(x)
         return scores
 
     def get_weak_robust_crossover(self, x):
@@ -60,36 +75,21 @@ class Model:
         return x[i[0]] if i.shape[0] > 0 else 0
 
     def fit(self, hist: NtCardHistogram) -> int:
-        num_iters = 0
-        self.__x_fit = np.arange(1, hist.max_count + 1)
-        y = hist.as_distribution()
-        err_rv = scipy.stats.burr
-        p_err, _, info, *_ = scipy.optimize.curve_fit(
-            err_rv.pdf,
-            self.__x_fit,
-            y,
-            [0.5, 0.5, 0.5],
+        self.__hist_max_count = hist.max_count
+        components = [
+            (1 / 3, scipy.stats.burr(0.5, 0.5)),
+            (1 / 3, scipy.stats.skewnorm(1, hist.otsu_thresholds[0], 1)),
+            (1 / 3, scipy.stats.skewnorm(1, hist.otsu_thresholds[1], 1)),
+        ]
+        p0 = [p for w, rv in components for p in [w] + list(rv.args)]
+        p, c, info, *_ = scipy.optimize.curve_fit(
+            lambda x, *p: pdf(x, update_components(components, p)),
+            np.arange(1, hist.max_count + 1),
+            hist.as_distribution(),
+            p0=p0,
             full_output=True,
-            maxfev=5000,
-        )
-        self.__err_rv = (1.0, err_rv(*p_err))
-        num_iters += info["nfev"]
-        y = np.clip(hist.as_distribution() - self.__err_rv[1].pdf(self.__x_fit), 0, 1)
-        d = y[hist.first_minima :].argmax() + hist.first_minima + 1
-        b = ([0] * 6, [1, np.inf, np.inf, 1, np.inf, np.inf])
-        b[0][1], b[1][1] = d / 2 * 0.9, d / 2 * 1.1
-        b[0][4], b[1][4] = d * 0.9, d * 1.1
-        p, _, info, *_ = scipy.optimize.curve_fit(
-            gmm,
-            self.__x_fit,
-            y,
-            full_output=True,
-            bounds=b,
             maxfev=Model.MAX_ITERS,
-            loss="arctan",
         )
-        c1 = (p[0], scipy.stats.norm(p[1], p[2]))
-        c2 = (p[3], scipy.stats.norm(p[4], p[5]))
-        self.__het, self.__hom = (c1, c2) if p[1] < p[4] else (c2, c1)
-        num_iters += info["nfev"]
-        return num_iters
+        print(np.diag(c))
+        self.__components = update_components(components, p)
+        return info["nfev"]
