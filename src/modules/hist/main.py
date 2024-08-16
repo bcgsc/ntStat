@@ -69,11 +69,11 @@ def run(cmd_args: list[str]) -> int:
     model = Model()
     try:
         num_iters = model.fit(hist)
+        kl_div = utils.kl_div(hist, model)
+        if not np.isfinite(kl_div):
+            raise RuntimeError()
     except RuntimeError:
-        warnings.warn(f"Model did not converge after {Model.MAX_ITERS} iterations")
-    kl_div = utils.kl_div(hist, model)
-    if not np.isfinite(kl_div):
-        warnings.warn(f"Model did not converge after {Model.MAX_ITERS} iterations")
+        warnings.warn(f"Model did not converge")
         model = Model()
 
     print("Histogram shape (y-axis in log scale):")

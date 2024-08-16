@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import scipy.optimize
 import scipy.special
@@ -21,6 +23,11 @@ def pdf(x, components):
     for w, rv in components:
         y += w * rv.pdf(x)
     return y
+
+
+def fitness(params, x, y_true, components):
+    y_pred = pdf(x, update_components(components, params))
+    return np.square(y_pred - y_true).sum()
 
 
 class Model:
@@ -78,14 +85,46 @@ class Model:
             (1 / 2, scipy.stats.norm(hist.otsu_thresholds[0], 1)),
             (1 / 2, scipy.stats.norm(hist.otsu_thresholds[1], 1)),
         ]
+        bounds = [
+            (0, 1),
+            (0, 2),
+            (0, 2),
+            (0, 2),
+            (0, 1),
+            (0, hist.max_count),
+            (0, hist.max_count),
+            (0, 1),
+            (0, hist.max_count),
+            (0, hist.max_count),
+        ]
         p0 = [p for w, rv in components for p in [w] + list(rv.args)]
-        p, _, info, *_ = scipy.optimize.curve_fit(
-            lambda x, *p: pdf(x, update_components(components, p)),
-            np.arange(1, hist.max_count + 1),
-            hist.as_distribution(),
-            p0=p0,
-            full_output=True,
-            maxfev=Model.MAX_ITERS,
+        x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
+        opt = scipy.optimize.basinhopping(
+            fitness,
+            minimizer_kwargs={"args": (x, y, components)},
+            x0=p0,
+            seed=42,
+            disp=True,
         )
-        self.__components = update_components(components, p)
-        return info["nfev"]
+        p, num_iters = opt.x, opt.nit
+        try:
+            p_cf, c, info, *_ = scipy.optimize.curve_fit(
+                lambda x, *params: pdf(x, update_components(components, params)),
+                x,
+                y,
+                p0=opt.x,
+                full_output=True,
+                maxfev=Model.MAX_ITERS,
+            )
+            if np.isfinite(np.linalg.cond(c)):
+                p = p_cf
+                num_iters += info["nfev"]
+            else:
+                raise RuntimeError()
+        except RuntimeError:
+            warnings.warn("LM failed, using results from differential evolution")
+        components = update_components(components, p)
+        if components[1][1].mean() > components[2][1].mean():
+            components[1], components[2] = components[2], components[1]
+        self.__components = components
+        return num_iters
