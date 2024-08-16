@@ -25,14 +25,14 @@ def pdf(x, components):
     return y
 
 
-def fitness(params, x, y_true, components):
+def sum_absolute_error(params, x, y_true, components):
     y_pred = pdf(x, update_components(components, params))
-    return np.square(y_pred - y_true).sum()
+    return np.abs(y_pred - y_true).sum()
 
 
 class Model:
 
-    MAX_ITERS = 5000
+    MAX_ITERS = 1500
 
     def __init__(self) -> None:
         self.__components = []
@@ -80,10 +80,11 @@ class Model:
 
     def fit(self, hist: NtCardHistogram) -> int:
         self.__hist_max_count = hist.max_count
+        d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
         components = [
             (1, scipy.stats.burr(0.5, 0.5, 0.5)),
-            (1 / 2, scipy.stats.norm(hist.otsu_thresholds[0], 1)),
-            (1 / 2, scipy.stats.norm(hist.otsu_thresholds[1], 1)),
+            (1 / 2, scipy.stats.norm(d / 2, d / 4)),
+            (1 / 2, scipy.stats.norm(d, d / 2)),
         ]
         bounds = [
             (0, 1),
@@ -91,40 +92,26 @@ class Model:
             (0, 2),
             (0, 2),
             (0, 1),
-            (0, hist.max_count),
+            (hist.first_minima, hist.max_count),
             (0, hist.max_count),
             (0, 1),
-            (0, hist.max_count),
+            (hist.first_minima, hist.max_count),
             (0, hist.max_count),
         ]
         p0 = [p for w, rv in components for p in [w] + list(rv.args)]
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
-        opt = scipy.optimize.basinhopping(
-            fitness,
-            minimizer_kwargs={"args": (x, y, components)},
+        opt = scipy.optimize.differential_evolution(
+            func=sum_absolute_error,
+            bounds=bounds,
+            args=(x, y, components),
             x0=p0,
             seed=42,
             disp=True,
+            workers=-1,
+            maxiter=Model.MAX_ITERS,
         )
-        p, num_iters = opt.x, opt.nit
-        try:
-            p_cf, c, info, *_ = scipy.optimize.curve_fit(
-                lambda x, *params: pdf(x, update_components(components, params)),
-                x,
-                y,
-                p0=opt.x,
-                full_output=True,
-                maxfev=Model.MAX_ITERS,
-            )
-            if np.isfinite(np.linalg.cond(c)):
-                p = p_cf
-                num_iters += info["nfev"]
-            else:
-                raise RuntimeError()
-        except RuntimeError:
-            warnings.warn("LM failed, using results from differential evolution")
-        components = update_components(components, p)
+        components = update_components(components, opt.x)
         if components[1][1].mean() > components[2][1].mean():
             components[1], components[2] = components[2], components[1]
         self.__components = components
-        return num_iters
+        return opt.nit
