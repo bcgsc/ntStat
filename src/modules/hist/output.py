@@ -164,7 +164,7 @@ def save_fit_animation(
     (weak_plot,) = axs[0].plot([], [], label=f"Weak k-mers")
     (robust_plot,) = axs[0].plot([], [], label="Robust k-mers")
     (fitted_plot,) = axs[0].plot([], [], label="Fitted model", ls="--", lw=2.5)
-    axs[0].set_xlim(0, hist.max_count + 2)
+    axs[0].set_xlim(plot_range[0], plot_range[1])
     if y_log:
         axs[0].set_ylim(0, 1)
         axs[0].set_yscale("log")
@@ -202,7 +202,6 @@ def save_fit_animation(
         func,
         frame_data,
         repeat=False,
-        blit=True,
         interval=1,
     ).save(
         out_path,
