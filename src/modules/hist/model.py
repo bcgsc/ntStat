@@ -1,9 +1,10 @@
-import warnings
+import sys
 
 import numpy as np
 import scipy.optimize
 import scipy.special
 import scipy.stats
+import tqdm
 from histogram import NtCardHistogram
 
 
@@ -18,28 +19,55 @@ def update_components(components, params):
     return updated
 
 
-def pdf(x, components):
+def pdf(x, components, params):
+    i_param = 0
     y = np.zeros(x.shape)
-    for w, rv in components:
-        y += w * rv.pdf(x)
+    for _, rv in components:
+        n_args = len(rv.args)
+        w = params[i_param]
+        p_rv = params[i_param + 1 : i_param + n_args + 1]
+        y += w * rv.dist.pdf(x, *p_rv)
+        i_param += n_args + 1
     return y
 
 
 def sum_absolute_error(params, x, y_true, components):
-    y_pred = pdf(x, update_components(components, params))
+    y_pred = pdf(x, components, params)
     return np.abs(y_pred - y_true).sum()
+
+
+def log_iteration(
+    intermediate_result: scipy.optimize.OptimizeResult,
+    history: list,
+    progress_bar: tqdm.tqdm,
+):
+    history.append((intermediate_result.x, intermediate_result.fun))
+    progress_bar.update()
+    progress_bar.set_postfix(loss=intermediate_result.fun)
 
 
 class Model:
 
     MAX_ITERS = 1500
 
+    @staticmethod
+    def from_params(params):
+        model = Model()
+        model.__components = update_components(model.__components, params)
+        model.__converged = True
+        return model
+
     def __init__(self) -> None:
-        self.__components = []
+        self.__components = [
+            (1, scipy.stats.burr(0.5, 0.5, 0.5)),
+            (1 / 2, scipy.stats.norm(1, 1)),
+            (1 / 2, scipy.stats.norm(1, 1)),
+        ]
+        self.__converged = False
 
     @property
     def converged(self) -> bool:
-        return len(self.__components) > 0
+        return self.__converged
 
     @property
     def err_rv(self):
@@ -79,13 +107,8 @@ class Model:
         return x[i[0]] if i.shape[0] > 0 else 0
 
     def fit(self, hist: NtCardHistogram) -> int:
+        self.__converged = False
         self.__hist_max_count = hist.max_count
-        d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
-        components = [
-            (1, scipy.stats.burr(0.5, 0.5, 0.5)),
-            (1 / 2, scipy.stats.norm(d / 2, d / 4)),
-            (1 / 2, scipy.stats.norm(d, d / 2)),
-        ]
         bounds = [
             (0, 1),
             (0, 2),
@@ -98,20 +121,40 @@ class Model:
             (hist.first_minima, hist.max_count),
             (0, hist.max_count),
         ]
-        p0 = [p for w, rv in components for p in [w] + list(rv.args)]
+        d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
+        p0 = [p for w, rv in self.__components for p in [w] + list(rv.args)]
+        p0[5], p0[8] = d / 2, d
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
+        history = []
+        progress_bar = tqdm.tqdm(
+            desc="Fitting model",
+            total=Model.MAX_ITERS,
+            disable=None,
+            file=sys.stdout,
+            leave=False,
+        )
+        callback = lambda intermediate_result: log_iteration(
+            intermediate_result,
+            history,
+            progress_bar=progress_bar,
+        )
         opt = scipy.optimize.differential_evolution(
             func=sum_absolute_error,
+            popsize=16,
+            init="sobol",
             bounds=bounds,
-            args=(x, y, components),
+            args=(x, y, self.__components),
             x0=p0,
             seed=42,
-            disp=True,
+            updating="deferred",
             workers=-1,
             maxiter=Model.MAX_ITERS,
+            callback=callback,
         )
-        components = update_components(components, opt.x)
+        progress_bar.close()
+        components = update_components(self.__components, opt.x)
         if components[1][1].mean() > components[2][1].mean():
             components[1], components[2] = components[2], components[1]
         self.__components = components
-        return opt.nit
+        self.__converged = True
+        return opt.nit, history

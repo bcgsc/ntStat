@@ -1,6 +1,9 @@
+import functools
+import itertools
 import os
 import warnings
 
+import matplotlib.animation
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +11,7 @@ import numpy.typing
 import pandas as pd
 import tabulate
 import termplotlib as tpl
+import tqdm
 from histogram import NtCardHistogram
 from model import Model
 
@@ -128,3 +132,81 @@ def save_probs(hist: NtCardHistogram, model: Model, out_path: str):
             "homozygous": scores[2, :],
         }
     ).to_csv(out_path, index=False)
+
+
+def plot_fit_state(data, plots, x_range, error_history):
+    params, error, n_iters = data
+    error_history.extend([error] * n_iters)
+    plots[0].set_data(range(1, len(error_history) + 1), error_history)
+    model = Model.from_params(params)
+    y_model = model.score_components(x_range)
+    plots[1].set_data(x_range, y_model[0, :])
+    plots[2].set_data(x_range, y_model[1:, :].sum(axis=0))
+    plots[3].set_data(x_range, y_model.sum(axis=0))
+    return plots
+
+
+def save_fit_animation(
+    history,
+    hist: NtCardHistogram,
+    style: str,
+    plot_range: tuple[int, int],
+    y_log: bool,
+    out_path: str,
+):
+    x_range = np.arange(plot_range[0], plot_range[1])
+    fig, axs = plt.subplots(ncols=2)
+    plt.style.use(style)
+    axs[0].set_xlabel("Count")
+    axs[0].set_ylabel("Density")
+    axs[0].bar(x_range, hist.as_distribution()[x_range - 1], width=1, label="Histogram")
+    axs[0].plot([], [])
+    (weak_plot,) = axs[0].plot([], [], label=f"Weak k-mers")
+    (robust_plot,) = axs[0].plot([], [], label="Robust k-mers")
+    (fitted_plot,) = axs[0].plot([], [], label="Fitted model", ls="--", lw=2.5)
+    axs[0].set_xlim(0, hist.max_count + 2)
+    if y_log:
+        axs[0].set_ylim(0, 1)
+        axs[0].set_yscale("log")
+    else:
+        axs[0].set_ylim(top=hist.as_distribution()[hist.first_minima :].max() * 1.5)
+    axs[1].set_xlabel("Iteration")
+    axs[1].set_ylabel("Best model's error")
+    axs[1].set_xlim((1, len(history) + 1))
+    errors = [err for _, err in history]
+    axs[1].set_ylim(min(errors) * 0.9, max(errors) + min(errors) * 0.9)
+    axs[1].plot([], [])
+    (err_plot,) = axs[1].plot([], [])
+    error_history = []
+    plots = [err_plot, weak_plot, robust_plot, fitted_plot]
+    func = functools.partial(
+        plot_fit_state,
+        plots=plots,
+        x_range=x_range,
+        error_history=error_history,
+    )
+    params_shape, params_dtype = history[0][0].shape, history[0][0].dtype
+    history_groups = itertools.groupby(history, key=lambda x: (x[0].tobytes(), x[1]))
+    frame_data = [
+        (np.frombuffer(p, dtype=params_dtype).reshape(params_shape), e, len(list(g)))
+        for (p, e), g in history_groups
+    ]
+    progress_bar = tqdm.tqdm(
+        desc="Saving gif",
+        total=len(frame_data),
+        unit="frame",
+        leave=False,
+    )
+    matplotlib.animation.FuncAnimation(
+        fig,
+        func,
+        frame_data,
+        repeat=False,
+        blit=True,
+        interval=1,
+    ).save(
+        out_path,
+        writer="pillow",
+        fps=24,
+        progress_callback=lambda *_: progress_bar.update(),
+    )

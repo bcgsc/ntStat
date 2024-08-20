@@ -45,6 +45,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("--plot", help="path to output plot")
     parser.add_argument("--probs", help="path to output probabilities in csv format")
+    parser.add_argument("--fit-gif", help="path to output model fit history animation")
     return parser.parse_args(argv)
 
 
@@ -67,15 +68,8 @@ def run(cmd_args: list[str]) -> int:
     ]
 
     model = Model()
-    try:
-        num_iters = model.fit(hist)
-        kl_div = utils.kl_div(hist, model)
-        if not np.isfinite(kl_div):
-            raise RuntimeError()
-    except RuntimeError:
-        warnings.warn(f"Model did not converge")
-        model = Model()
-
+    num_iters, history = model.fit(hist)
+    kl_div = utils.kl_div(hist, model)
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
 
@@ -134,8 +128,20 @@ def run(cmd_args: list[str]) -> int:
             args.y_log,
             args.plot,
         )
+        print(f"Saved plot to {args.plot}")
     if args.probs and model.converged:
         output.save_probs(hist, model, args.probs)
+        print(f"Saved model probabilities to {args.probs}")
+    if args.fit_gif:
+        output.save_fit_animation(
+            history,
+            hist,
+            args.style,
+            plot_range,
+            args.y_log,
+            args.fit_gif,
+        )
+        print(f"Saved fit history gif to {args.fit_gif}")
     return 0
 
 
