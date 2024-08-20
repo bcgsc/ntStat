@@ -31,9 +31,9 @@ def pdf(x, components, params):
     return y
 
 
-def sum_absolute_error(params, x, y_true, components):
-    y_pred = pdf(x, components, params)
-    return np.abs(y_pred - y_true).sum()
+def loss(params, x, y, components):
+    fx = pdf(x, components, params)
+    return scipy.special.huber(0.001, np.abs(y - fx).sum())
 
 
 def log_iteration(
@@ -48,7 +48,7 @@ def log_iteration(
 
 class Model:
 
-    MAX_ITERS = 1500
+    MAX_ITERS = 1000
 
     @staticmethod
     def from_params(params):
@@ -109,21 +109,22 @@ class Model:
     def fit(self, hist: NtCardHistogram) -> int:
         self.__converged = False
         self.__hist_max_count = hist.max_count
+        d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
         bounds = [
             (0, 1),
             (0, 2),
             (0, 2),
             (0, 2),
             (0, 1),
-            (hist.first_minima, hist.max_count),
+            (hist.first_minima, d),
             (0, hist.max_count),
             (0, 1),
-            (hist.first_minima, hist.max_count),
+            (d / 2, d * 2),
             (0, hist.max_count),
         ]
-        d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
         p0 = [p for w, rv in self.__components for p in [w] + list(rv.args)]
-        p0[5], p0[8] = d / 2, d
+        p0[5], p0[6] = d / 2, d / 2
+        p0[8], p0[9] = d, d / 2
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
         history = []
         progress_bar = tqdm.tqdm(
@@ -139,8 +140,8 @@ class Model:
             progress_bar=progress_bar,
         )
         opt = scipy.optimize.differential_evolution(
-            func=sum_absolute_error,
-            popsize=16,
+            func=loss,
+            popsize=3,
             init="sobol",
             bounds=bounds,
             args=(x, y, self.__components),
@@ -150,6 +151,9 @@ class Model:
             workers=-1,
             maxiter=Model.MAX_ITERS,
             callback=callback,
+            mutation=(0.2, 1.0),
+            recombination=0.8,
+            strategy="best1exp",
         )
         progress_bar.close()
         components = update_components(self.__components, opt.x)
