@@ -60,8 +60,8 @@ class Model:
     def __init__(self) -> None:
         self.__components = [
             (1, scipy.stats.burr(0.5, 0.5, 0.5)),
-            (1, scipy.stats.skewnorm(1, 1, 1)),
-            (1, scipy.stats.skewnorm(1, 1, 1)),
+            (1, scipy.stats.skewnorm(0, 1, 1)),
+            (1, scipy.stats.skewnorm(0, 1, 1)),
         ]
         self.__converged = False
 
@@ -116,20 +116,21 @@ class Model:
             (0, 2),
             (0, 2),
             (0, 1),
-            (0, 2),
+            (-5, 5),
             (hist.first_minima, 3 * d / 4),
-            (d / 6, d * 6),
+            (1, d),
             (0, 1),
-            (0, 2),
+            (-5, 5),
             (3 * d / 4, 3 * d / 2),
-            (d / 6, d * 6),
+            (1, d),
         ]
         p0 = [(ub + lb) / 2 for lb, ub in bounds]
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
         history = []
+        max_iters = config.get("maxiter", 1000)
         progress_bar = tqdm.tqdm(
             desc="Fitting model",
-            total=Model.MAX_ITERS,
+            total=max_iters,
             disable=None,
             file=sys.stdout,
             leave=False,
@@ -149,7 +150,7 @@ class Model:
             seed=config.get("seed", 42),
             updating="deferred",
             workers=config.get("workers", -1),
-            maxiter=config.get("maxiter", 1000),
+            maxiter=max_iters,
             callback=callback,
             mutation=config.get("mutation", (0.2, 1.0)),
             recombination=config.get("recombination", 0.8),
