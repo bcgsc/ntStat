@@ -1,4 +1,5 @@
 import argparse
+import json
 import re
 
 import kneed
@@ -16,6 +17,11 @@ def validate_plot_range_str(r_str: str) -> list[int, int]:
     if not pattern.match(r_str):
         raise argparse.ArgumentTypeError("invalid value")
     return list(map(int, r_str.split(":")))
+
+
+def validate_config_json(path: str) -> dict:
+    with open(path) as fp:
+        return json.load(fp)
 
 
 def scipy_rv_to_string(rv: scipy.stats.rv_continuous | scipy.stats.rv_discrete):

@@ -50,8 +50,6 @@ def log_iteration(
 
 class Model:
 
-    MAX_ITERS = 1000
-
     @staticmethod
     def from_params(params):
         model = Model()
@@ -108,7 +106,7 @@ class Model:
         i = np.where(y2 >= y1)[0]
         return x[i[0]] if i.shape[0] > 0 else 0
 
-    def fit(self, hist: NtCardHistogram) -> int:
+    def fit(self, hist: NtCardHistogram, config: dict = dict()) -> int:
         self.__converged = False
         self.__hist_max_count = hist.max_count
         d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
@@ -143,19 +141,19 @@ class Model:
         )
         opt = scipy.optimize.differential_evolution(
             func=loss,
-            popsize=3,
-            init="sobol",
+            popsize=config.get("popsize", 3),
+            init=config.get("init", "sobol"),
             bounds=bounds,
             args=(x, y, self.__components),
             x0=p0,
-            seed=42,
+            seed=config.get("seed", 42),
             updating="deferred",
-            workers=-1,
-            maxiter=Model.MAX_ITERS,
+            workers=config.get("workers", -1),
+            maxiter=config.get("maxiter", 1000),
             callback=callback,
-            mutation=(0.2, 1.0),
-            recombination=0.8,
-            strategy="best1exp",
+            mutation=config.get("mutation", (0.2, 1.0)),
+            recombination=config.get("recombination", 0.8),
+            strategy=config.get("strategy", "best1exp"),
         )
         progress_bar.close()
         components = update_components(self.__components, opt.x)

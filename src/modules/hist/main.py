@@ -54,6 +54,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--fit-gif",
         help="path to output model fit history animation",
     )
+    parser.add_argument(
+        "-c",
+        "--config",
+        help="path to differential evolution config file (json)",
+        type=utils.validate_config_json,
+    )
     return parser.parse_args(argv)
 
 
@@ -107,7 +113,7 @@ def run(cmd_args: list[str]) -> int:
         dataset_rows.append(["Coverage", f"{model.coverage:.1f}x"])
         dataset_rows.append(["Error rate", f"{err_rate * 100:.2f}%"])
         dataset_rows.append(["Quality score", f"Q{int(-10 * np.log10(err_rate))}"])
-        dataset_rows.append(["Heterozygosity", f"{heterozygosity * 100:.3f}%"])
+        dataset_rows.append(["Heterozygosity", f"{heterozygosity * 100:.2f}%"])
         dataset_rows.append(["Genome size", utils.format_bp(genome_size)])
 
     table_printer.print("K-mer statistics", *kmer_stats_rows)
