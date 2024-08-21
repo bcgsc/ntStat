@@ -43,9 +43,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "'auto' will automatically adjust the limits for better visibility.",
         type=utils.validate_plot_range_str,
     )
-    parser.add_argument("--plot", help="path to output plot")
-    parser.add_argument("--probs", help="path to output probabilities in csv format")
-    parser.add_argument("--fit-gif", help="path to output model fit history animation")
+    parser.add_argument("-o", "--plot", help="path to output plot")
+    parser.add_argument(
+        "-p",
+        "--probs",
+        help="path to output probabilities in csv format",
+    )
+    parser.add_argument(
+        "-g",
+        "--fit-gif",
+        help="path to output model fit history animation",
+    )
     return parser.parse_args(argv)
 
 
