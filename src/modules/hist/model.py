@@ -14,7 +14,6 @@ def update_components(params):
         i_w = 4 + i * 3
         w, d, p = params[i_w : i_w + 3]
         r = d * p / (1 - p) + 1
-        print(w, r, p, d)
         components.append((w, scipy.stats.nbinom(r, p)))
     return components
 
@@ -91,7 +90,6 @@ class Model:
 
     def fit(self, hist: NtCardHistogram, config: dict = dict()) -> int:
         self.__converged = False
-        self.__hist_max_count = hist.max_count
         d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
         bounds = [
             (0, 1),
