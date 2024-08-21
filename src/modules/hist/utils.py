@@ -62,6 +62,12 @@ def kl_div(hist, model):
     return scipy.stats.entropy(p, q)
 
 
+def sum_absolute_error(hist, model):
+    y_pred = model.pdf(np.arange(1, hist.max_count + 1))
+    y_true = hist.as_distribution()
+    return np.abs(y_true - y_pred).sum()
+
+
 def count_robust_kmers(hist, model):
     x = np.arange(1, hist.max_count + 1)
     scores = model.score_components(x)
