@@ -33,7 +33,9 @@ def pdf(x, components, params):
 
 def loss(params, x, y, components):
     fx = pdf(x, components, params)
-    return scipy.special.huber(0.001, np.abs(y - fx).sum())
+    huber = scipy.special.huber(0.001, np.abs(y - fx).sum())
+    kl_div = scipy.stats.entropy(fx, y)
+    return huber + kl_div
 
 
 def log_iteration(
@@ -60,8 +62,8 @@ class Model:
     def __init__(self) -> None:
         self.__components = [
             (1, scipy.stats.burr(0.5, 0.5, 0.5)),
-            (1 / 2, scipy.stats.norm(1, 1)),
-            (1 / 2, scipy.stats.norm(1, 1)),
+            (1, scipy.stats.skewnorm(1, 1, 1)),
+            (1, scipy.stats.skewnorm(1, 1, 1)),
         ]
         self.__converged = False
 
@@ -116,15 +118,15 @@ class Model:
             (0, 2),
             (0, 2),
             (0, 1),
-            (hist.first_minima, d),
-            (0, hist.max_count),
+            (0, 2),
+            (hist.first_minima, 3 * d / 4),
+            (d / 6, d * 6),
             (0, 1),
-            (d / 2, d * 2),
-            (0, hist.max_count),
+            (0, 2),
+            (3 * d / 4, 3 * d / 2),
+            (d / 6, d * 6),
         ]
-        p0 = [p for w, rv in self.__components for p in [w] + list(rv.args)]
-        p0[5], p0[6] = d / 2, d / 2
-        p0[8], p0[9] = d, d / 2
+        p0 = [(ub + lb) / 2 for lb, ub in bounds]
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
         history = []
         progress_bar = tqdm.tqdm(
