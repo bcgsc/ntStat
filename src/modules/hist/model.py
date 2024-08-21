@@ -8,31 +8,27 @@ import tqdm
 from histogram import NtCardHistogram
 
 
-def update_components(components, params):
-    updated = []
-    i_param = 0
-    for _, rv in components:
-        n_args = len(rv.args)
-        updated_rv = rv.dist(*params[i_param + 1 : i_param + n_args + 1])
-        updated.append([params[i_param], updated_rv])
-        i_param += n_args + 1
-    return updated
+def update_components(params):
+    components = [(params[0], scipy.stats.burr(*params[1:4]))]
+    for i in range(2):  # TODO: dynamically find number of nbinom components
+        i_w = 4 + i * 3
+        w, d, p = params[i_w : i_w + 3]
+        r = d * p / (1 - p) + 1
+        print(w, r, p, d)
+        components.append((w, scipy.stats.nbinom(r, p)))
+    return components
 
 
-def pdf(x, components, params):
-    i_param = 0
-    y = np.zeros(x.shape)
-    for _, rv in components:
-        n_args = len(rv.args)
-        w = params[i_param]
-        p_rv = params[i_param + 1 : i_param + n_args + 1]
-        y += w * rv.dist.pdf(x, *p_rv)
-        i_param += n_args + 1
-    return y
+def score(x, components):
+    scores = np.empty(shape=(len(components), x.shape[0]))
+    for i, (w, rv) in enumerate(components):
+        y = rv.pdf(x) if isinstance(rv.dist, scipy.stats.rv_continuous) else rv.pmf(x)
+        scores[i, :] = w * y
+    return scores
 
 
-def loss(params, x, y, components):
-    fx = pdf(x, components, params)
+def loss(params, x, y):
+    fx = score(x, update_components(params)).sum(axis=0)
     huber = scipy.special.huber(0.001, np.abs(y - fx).sum())
     kl_div = scipy.stats.entropy(fx, y)
     return huber + kl_div
@@ -43,26 +39,16 @@ def log_iteration(
     history: list,
     progress_bar: tqdm.tqdm,
 ):
-    history.append((intermediate_result.x, intermediate_result.fun))
+    components = update_components(intermediate_result.x)
+    history.append((components, intermediate_result.fun))
     progress_bar.update()
     progress_bar.set_postfix(loss=intermediate_result.fun)
 
 
 class Model:
 
-    @staticmethod
-    def from_params(params):
-        model = Model()
-        model.__components = update_components(model.__components, params)
-        model.__converged = True
-        return model
-
     def __init__(self) -> None:
-        self.__components = [
-            (1, scipy.stats.burr(0.5, 0.5, 0.5)),
-            (1, scipy.stats.skewnorm(0, 1, 1)),
-            (1, scipy.stats.skewnorm(0, 1, 1)),
-        ]
+        self.__components = []
         self.__converged = False
 
     @property
@@ -87,17 +73,14 @@ class Model:
 
     @property
     def peaks(self):
-        x = np.linspace(1, self.__hist_max_count + 1, self.__hist_max_count * 10)
-        return x[self.score_components(x)[1:, :].argmax(axis=1)]
+        args = [rv.args for _, rv in self.__components[1:]]
+        return np.array([(r - 1) * (1 - p) / p for r, p in args])
 
     def pdf(self, x):
         return self.score_components(x).sum(axis=0)
 
     def score_components(self, x):
-        scores = np.zeros(shape=(len(self.__components), len(x)))
-        for i, (w, rv) in enumerate(self.__components):
-            scores[i, :] = w * rv.pdf(x)
-        return scores
+        return score(x, self.__components)
 
     def get_weak_robust_crossover(self, x):
         scores = self.score_components(x)
@@ -116,15 +99,12 @@ class Model:
             (0, 2),
             (0, 2),
             (0, 1),
-            (-5, 5),
             (hist.first_minima, 3 * d / 4),
-            (1, d),
             (0, 1),
-            (-5, 5),
-            (3 * d / 4, 3 * d / 2),
-            (1, d),
+            (0, 1),
+            (3 * d / 4, 5 * d / 4),
+            (0, 1),
         ]
-        p0 = [(ub + lb) / 2 for lb, ub in bounds]
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
         history = []
         max_iters = config.get("maxiter", 1000)
@@ -144,9 +124,9 @@ class Model:
             func=loss,
             popsize=config.get("popsize", 3),
             init=config.get("init", "sobol"),
+            x0=[(a + b) / 2 for a, b in bounds],
             bounds=bounds,
-            args=(x, y, self.__components),
-            x0=p0,
+            args=(x, y),
             seed=config.get("seed", 42),
             updating="deferred",
             workers=config.get("workers", -1),
@@ -157,7 +137,7 @@ class Model:
             strategy=config.get("strategy", "best1exp"),
         )
         progress_bar.close()
-        components = update_components(self.__components, opt.x)
+        components = update_components(opt.x)
         if components[1][1].mean() > components[2][1].mean():
             components[1], components[2] = components[2], components[1]
         self.__components = components

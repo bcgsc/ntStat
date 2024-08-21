@@ -13,7 +13,7 @@ import tabulate
 import termplotlib as tpl
 import tqdm
 from histogram import NtCardHistogram
-from model import Model
+from model import Model, score
 
 
 class TablePrinter:
@@ -135,11 +135,10 @@ def save_probs(hist: NtCardHistogram, model: Model, out_path: str):
 
 
 def plot_fit_state(data, plots, x_range, error_history):
-    params, error, n_iters = data
-    error_history.extend([error] * n_iters)
+    components, error = data
+    error_history.append(error)
     plots[0].set_data(range(1, len(error_history) + 1), error_history)
-    model = Model.from_params(params)
-    y_model = model.score_components(x_range)
+    y_model = score(x_range, components)
     plots[1].set_data(x_range, y_model[0, :])
     plots[2].set_data(x_range, y_model[1:, :].sum(axis=0))
     plots[3].set_data(x_range, y_model.sum(axis=0))
@@ -186,22 +185,16 @@ def save_fit_animation(
         x_range=x_range,
         error_history=error_history,
     )
-    params_shape, params_dtype = history[0][0].shape, history[0][0].dtype
-    history_groups = itertools.groupby(history, key=lambda x: (x[0].tobytes(), x[1]))
-    frame_data = [
-        (np.frombuffer(p, dtype=params_dtype).reshape(params_shape), e, len(list(g)))
-        for (p, e), g in history_groups
-    ]
     progress_bar = tqdm.tqdm(
         desc="Saving gif",
-        total=len(frame_data),
+        total=len(history),
         unit="frame",
         leave=False,
     )
     matplotlib.animation.FuncAnimation(
         fig,
         func,
-        frame_data,
+        history,
         repeat=False,
         interval=1,
     ).save(
