@@ -42,6 +42,11 @@ def log_iteration(
     progress_bar.set_postfix(loss=intermediate_result.fun)
 
 
+def nbinom_mode(rv):
+    r, p = rv.args
+    return (r - 1) * (1 - p) / p
+
+
 class Model:
 
     def __init__(self) -> None:
@@ -69,8 +74,7 @@ class Model:
 
     @property
     def peaks(self):
-        args = [rv.args for _, rv in self.__components[1:]]
-        return np.array([(r - 1) * (1 - p) / p for r, p in args])
+        return np.array([nbinom_mode(rv) for _, rv in self.__components[1:]])
 
     def pdf(self, x):
         return self.score_components(x).sum(axis=0)
@@ -93,10 +97,10 @@ class Model:
             (0, 2),
             (0, 2),
             (0, 1),
-            (hist.first_minima, d * 0.75),
+            (hist.first_minima, d),
             (0, 1),
             (0, 1),
-            (d * 0.75, d * 2),
+            (d * 0.5, d * 1.5),
             (0, 1),
         ]
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
@@ -129,10 +133,24 @@ class Model:
             mutation=config.get("mutation", (0.3, 1.2)),
             recombination=config.get("recombination", 0.8),
             strategy=config.get("strategy", "best1bin"),
+            polish=False,
         )
+        try:
+            p_cf, *_ = scipy.optimize.curve_fit(
+                lambda x, *p: score(x, update_components(p)).sum(axis=0),
+                xdata=x,
+                ydata=y,
+                p0=opt.x,
+                bounds=list(zip(*bounds)),
+            )
+            polished = loss(p_cf, x, y) <= loss(opt.x, x, y)
+            params = p_cf if polished else opt.x
+        except (RuntimeError, scipy.optimize.OptimizeWarning):
+            polished = False
+            params = opt.x
         progress_bar.close()
-        components = update_components(opt.x)
-        if components[1][1].mean() > components[2][1].mean():
+        components = update_components(params)
+        if nbinom_mode(components[1][1]) > nbinom_mode(components[2][1]):
             components[1], components[2] = components[2], components[1]
         self.__components = components
-        return opt.nit, loss(opt.x, x, y), history
+        return opt.nit, loss(params, x, y), history, polished
