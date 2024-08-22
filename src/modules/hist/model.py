@@ -28,9 +28,7 @@ def score(x, components):
 
 def loss(params, x, y):
     fx = score(x, update_components(params)).sum(axis=0)
-    huber = scipy.special.huber(0.001, np.abs(y - fx).sum())
-    kl_div = scipy.stats.entropy(fx, y)
-    return huber + kl_div
+    return np.abs(y - fx).sum()
 
 
 def log_iteration(
@@ -128,13 +126,13 @@ class Model:
             workers=config.get("workers", -1),
             maxiter=max_iters,
             callback=callback,
-            mutation=config.get("mutation", (0.2, 1.0)),
+            mutation=config.get("mutation", (0.3, 1.2)),
             recombination=config.get("recombination", 0.8),
-            strategy=config.get("strategy", "best1exp"),
+            strategy=config.get("strategy", "best1bin"),
         )
         progress_bar.close()
         components = update_components(opt.x)
         if components[1][1].mean() > components[2][1].mean():
             components[1], components[2] = components[2], components[1]
         self.__components = components
-        return opt.nit, history
+        return opt.nit, loss(opt.x, x, y), history

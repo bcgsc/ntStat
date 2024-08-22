@@ -83,10 +83,8 @@ def run(cmd_args: list[str]) -> int:
 
     model = Model()
     t0 = time.time()
-    num_iters, history = model.fit(hist)
+    num_iters, final_error, history = model.fit(hist)
     time_elapsed = time.time() - t0
-    kl_div = utils.kl_div(hist, model)
-    sum_abs_err = utils.sum_absolute_error(hist, model)
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
 
@@ -107,8 +105,7 @@ def run(cmd_args: list[str]) -> int:
             [f"Heterozygous (w = {w_het:.3f})", utils.scipy_rv_to_string(rv_het)],
             [f"Homozygous   (w = {w_hom:.3f})", utils.scipy_rv_to_string(rv_hom)],
             ["Number of iterations", num_iters],
-            ["KL Divergence", utils.format_float(kl_div)],
-            ["Sum absolute error", utils.format_float(sum_abs_err)],
+            ["Model error", final_error],
             ["Wall clock time", f"{time_elapsed:.3f}s"],
         )
         kmer_stats_rows.append(["Number of robust k-mers", num_robust])
