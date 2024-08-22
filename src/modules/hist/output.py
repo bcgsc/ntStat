@@ -135,8 +135,8 @@ def save_probs(hist: NtCardHistogram, model: Model, out_path: str):
 
 
 def plot_fit_state(data, plots, x_range, error_history):
-    components, error = data
-    error_history.append(error)
+    loss, components, n_iters = data
+    error_history.extend([loss] * n_iters)
     plots[0].set_data(range(1, len(error_history) + 1), error_history)
     y_model = score(x_range, components)
     plots[1].set_data(x_range, y_model[0, :])
@@ -179,6 +179,8 @@ def save_fit_animation(
     (err_plot,) = axs[1].plot([], [])
     error_history = []
     plots = [err_plot, weak_plot, robust_plot, fitted_plot]
+    frame_groups = itertools.groupby(history, lambda x: x[1])
+    frame_data = [(e, list(g)[0][0], len(list(g))) for e, g in frame_groups]
     func = functools.partial(
         plot_fit_state,
         plots=plots,
@@ -187,14 +189,13 @@ def save_fit_animation(
     )
     progress_bar = tqdm.tqdm(
         desc="Saving gif",
-        total=len(history),
-        unit="frame",
+        total=len(frame_data),
         leave=False,
     )
     matplotlib.animation.FuncAnimation(
         fig,
         func,
-        history,
+        frame_data,
         repeat=False,
         interval=1,
     ).save(

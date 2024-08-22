@@ -97,10 +97,10 @@ class Model:
             (0, 2),
             (0, 2),
             (0, 1),
-            (hist.first_minima, 3 * d / 4),
+            (hist.first_minima, d * 0.75),
             (0, 1),
             (0, 1),
-            (3 * d / 4, 5 * d / 4),
+            (d * 0.75, d * 2),
             (0, 1),
         ]
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
