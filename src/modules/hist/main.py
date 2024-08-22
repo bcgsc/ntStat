@@ -60,6 +60,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="path to differential evolution config file (json)",
         type=utils.validate_config_json,
     )
+    parser.add_argument("--no-model", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -82,9 +83,10 @@ def run(cmd_args: list[str]) -> int:
     ]
 
     model = Model()
-    t0 = time.time()
-    num_iters, final_error, history, polished = model.fit(hist)
-    time_elapsed = time.time() - t0
+    if not args.no_model:
+        t0 = time.time()
+        num_iters, final_error, history, polished = model.fit(hist)
+        time_elapsed = time.time() - t0
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
 
@@ -148,7 +150,7 @@ def run(cmd_args: list[str]) -> int:
     if args.probs and model.converged:
         output.save_probs(hist, model, args.probs)
         print(f"Saved model probabilities to {args.probs}")
-    if args.fit_gif:
+    if args.fit_gif and not args.no_model:
         output.save_fit_animation(
             history,
             hist,
