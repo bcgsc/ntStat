@@ -48,11 +48,10 @@ class Model:
 
     def __init__(self) -> None:
         self.__components = []
-        self.__converged = False
 
     @property
     def converged(self) -> bool:
-        return self.__converged
+        return len(self.__components) > 0
 
     @property
     def err_rv(self):
@@ -89,7 +88,6 @@ class Model:
         return x[i[0]] if i.shape[0] > 0 else 0
 
     def fit(self, hist: NtCardHistogram, config: dict = dict()) -> int:
-        self.__converged = False
         d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
         bounds = [
             (0, 1),
@@ -139,5 +137,4 @@ class Model:
         if components[1][1].mean() > components[2][1].mean():
             components[1], components[2] = components[2], components[1]
         self.__components = components
-        self.__converged = True
         return opt.nit, history
