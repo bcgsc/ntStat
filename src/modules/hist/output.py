@@ -58,7 +58,6 @@ def save_plot(
     hist: NtCardHistogram,
     model: Model,
     kmer_size: int,
-    x_intersect: int,
     style: str,
     title: str,
     table_rows: list[list[str]],
@@ -72,33 +71,17 @@ def save_plot(
     ax.set_title(title)
     ax.set_xlabel(f"$k$-mer count ($k$ = {kmer_size})")
     ax.set_ylabel("Frequency")
-    bars = ax.bar(x_range, hist.values[x_range - 1], width=1, label="Histogram")
+    ax.bar(x_range, hist.values[x_range - 1], width=1, label="Histogram")
     ax.plot([], [])  # shift the color map
-    thresholds = {"First minima": hist.first_minima + 1}
     if model.converged:
         y_model = model.score_components(x_range) * hist.num_distinct
-        ax.plot(x_range, y_model[0, :], label=f"Weak k-mers")
-        ax.plot(x_range, y_model[1:, :].sum(axis=0), label="Robust k-mers")
+        ax.plot(x_range, y_model[0, :], label=f"Errors")
+        ax.plot(x_range, y_model[1, :], label="Heterozygous")
+        ax.plot(x_range, y_model[2, :], label="Homozygous")
         ax.plot(x_range, y_model.sum(axis=0), label="Fitted model", ls="--", lw=2.5)
-        thresholds.update(
-            {
-                "Heterozygous peak": np.rint(model.peaks[0]).astype(int),
-                "Homozygous peak": np.rint(model.peaks[1]).astype(int),
-                "Weak/robust crossover": x_intersect,
-            }
-        )
-    else:
-        thresholds.update({"Peak": hist.mode_after_first_minima + 1})
     handles, labels = ax.get_legend_handles_labels()
     handles.insert(0, matplotlib.lines.Line2D([], [], linestyle=""))
     labels.insert(0, "")
-    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    for i, (name, x) in enumerate(thresholds.items()):
-        if x_range[0] <= x <= x_range[-1]:
-            color = colors[(i + 4) % len(colors)]
-            bars[x - x_range[0]].set_color(color)
-            handles.append(matplotlib.patches.Patch(facecolor=color))
-            labels.append(name)
     table = tabulate.tabulate(table_rows, tablefmt="plain", colalign=("left", "right"))
     legend = ax.legend(
         handles=handles,

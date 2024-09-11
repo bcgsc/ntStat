@@ -4,7 +4,7 @@ figure.autolayout: True
 
 axes.facecolor: EBF1F5
 axes.edgecolor: black
-axes.prop_cycle: cycler("color", ["CFD8DD","ce4e77","23a4e0","292f36","B4ADCB","e094a0","DFC997","ACC59C"])
+axes.prop_cycle: cycler("color", ["CFD8DD", "D90429", "0077B6", "D8BF1C", "2B2D42"])
 axes.grid: True
 axes.axisbelow: True
 axes.titlelocation: left
