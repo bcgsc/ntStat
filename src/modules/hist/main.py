@@ -69,8 +69,8 @@ def run(cmd_args: list[str]) -> int:
     hist = NtCardHistogram(args.path)
 
     kmer_stats_rows = [
-        ["Total number of k-mers", hist.num_total],
         ["Number of distinct k-mers", hist.num_distinct],
+        ["Total number of k-mers", hist.num_total],
     ]
     thresh_rows = [
         ["Elbow", hist.elbow + 1],
@@ -96,11 +96,6 @@ def run(cmd_args: list[str]) -> int:
         w_err, rv_err = model.err_rv
         w_het, rv_het = model.heterozygous_rv
         w_hom, rv_hom = model.homozygous_rv
-        num_robust = utils.count_robust_kmers(hist, model)
-        err_rate = utils.get_error_rate(num_robust, hist.num_total, args.kmer_size)
-        heterozygosity = utils.get_heterozygosity(hist, model)
-        x_crossover = model.get_weak_robust_crossover(np.arange(1, hist.max_count + 1))
-        genome_size = int(hist.num_total / model.coverage)
         table_printer.print(
             "Fitted model",
             [f"Errors       (w = {w_err:.3f})", utils.scipy_rv_to_string(rv_err)],
@@ -111,19 +106,26 @@ def run(cmd_args: list[str]) -> int:
             ["Model error", final_error],
             ["Wall clock time", f"{time_elapsed:.3f}s"],
         )
-        kmer_stats_rows.append(["Number of robust k-mers", num_robust])
+        num_robust = utils.count_robust_kmers(hist, model)
+        num_homozygous = utils.count_homozygous_kmers(hist, model)
+        num_heterozygous = utils.count_heterozygous_kmers(hist, model)
+        kmer_stats_rows.insert(1, ["Number of robust k-mers", num_robust])
+        kmer_stats_rows.insert(2, ["Number of heterozygous k-mers", num_heterozygous])
+        kmer_stats_rows.insert(3, ["Number of homozygous k-mers", num_homozygous])
+        x_crossover = model.get_weak_robust_crossover(np.arange(1, hist.max_count + 1))
         thresh_rows.append(["Weak/robust crossover", x_crossover or "N/A"])
         thresh_rows.append(["Heterozygous peak", np.rint(model.peaks[0]).astype(int)])
         thresh_rows.append(["Homozygous peak", np.rint(model.peaks[1]).astype(int)])
+        heterozygosity = num_heterozygous / num_robust
+        genome_size = hist.num_total / model.coverage
         dataset_rows.append(["Coverage", f"{model.coverage:.1f}x"])
-        dataset_rows.append(["Error rate", f"{err_rate * 100:.2f}%"])
-        dataset_rows.append(["Quality score", f"Q{int(-10 * np.log10(err_rate))}"])
+        dataset_rows.append(["Robustness", f"{num_robust / hist.num_total * 100:.2f}%"])
         dataset_rows.append(["Heterozygosity", f"{heterozygosity * 100:.2f}%"])
-        dataset_rows.append(["Genome size", utils.format_bp(genome_size)])
+        dataset_rows.append(["Genome size (hap.)", utils.format_bp(genome_size)])
 
     table_printer.print("K-mer statistics", *kmer_stats_rows)
     table_printer.print("Thresholds", *thresh_rows)
-    table_printer.print("Dataset characteristics", *dataset_rows)
+    table_printer.print("Data/genome characteristics", *dataset_rows)
 
     plot_range = args.plot_range or [1, hist.max_count + 1]
     if plot_range[1] == 0 and model.converged:
@@ -138,7 +140,6 @@ def run(cmd_args: list[str]) -> int:
             hist,
             model,
             args.kmer_size,
-            x_crossover,
             args.style,
             args.title,
             dataset_rows,
