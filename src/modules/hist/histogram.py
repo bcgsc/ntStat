@@ -1,7 +1,9 @@
+import kneed
 import numpy as np
 import numpy.typing
 import pandas as pd
-import utils
+import scipy.signal
+import skimage.filters
 
 
 class NtCardHistogram:
@@ -12,9 +14,14 @@ class NtCardHistogram:
         self.__distinct = int(data[1])
         self.__hist = data[2:]
         self.__hist.setflags(write=False)
-        self.__elbow = utils.find_elbow(self.__hist)
-        self.__min0 = utils.find_first_minima(self.__hist)
-        self.__otsu = utils.find_otsu_thresholds(self.__hist)
+        self.__min0 = scipy.signal.argrelextrema(self.__hist, np.less)[0][0]
+        self.__elbow = kneed.KneeLocator(
+            np.arange(self.__hist.shape[0]),
+            self.__hist,
+            curve="convex",
+            direction="decreasing",
+        ).elbow
+        self.__otsu = skimage.filters.threshold_multiotsu(hist=self.__hist)
         self.__otsu.setflags(write=False)
 
     def __getitem__(self, count):
