@@ -6,7 +6,6 @@ import scipy.optimize
 import scipy.special
 import scipy.stats
 import tqdm
-from histogram import NtCardHistogram
 
 
 def update_components(params):
