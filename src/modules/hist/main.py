@@ -85,7 +85,7 @@ def run(cmd_args: list[str]) -> int:
     model = Model()
     if not args.no_model:
         t0 = time.time()
-        num_iters, final_error, history, polished = model.fit(hist)
+        num_iters, final_error, history = model.fit(hist)
         time_elapsed = time.time() - t0
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
@@ -96,13 +96,18 @@ def run(cmd_args: list[str]) -> int:
         w_err, rv_err = model.err_rv
         w_het, rv_het = model.heterozygous_rv
         w_hom, rv_hom = model.homozygous_rv
-        table_printer.print(
-            "Fitted model",
+        model_components_rows = [
             [f"Errors       (w = {w_err:.3f})", utils.scipy_rv_to_string(rv_err)],
             [f"Heterozygous (w = {w_het:.3f})", utils.scipy_rv_to_string(rv_het)],
             [f"Homozygous   (w = {w_hom:.3f})", utils.scipy_rv_to_string(rv_hom)],
+        ]
+        for i, (w, rv) in enumerate(model.copy_rvs):
+            row = [f"Copy {i + 3} (w = {w:.3f})", utils.scipy_rv_to_string(rv)]
+            model_components_rows.append(row)
+        table_printer.print(
+            "Fitted model",
+            *model_components_rows,
             ["Number of iterations", num_iters],
-            ["Polished with LM?", "Yes" if polished else "No"],
             ["Model error", final_error],
             ["Wall clock time", f"{time_elapsed:.3f}s"],
         )
@@ -129,7 +134,8 @@ def run(cmd_args: list[str]) -> int:
 
     plot_range = args.plot_range or [1, hist.max_count + 1]
     if plot_range[1] == 0 and model.converged:
-        plot_range[1] = int(model.homozygous_rv[1].interval(0.99)[1])
+        last_rv = model.copy_rvs[-1] if len(model.copy_rvs) > 0 else model.homozygous_rv
+        plot_range[1] = int(last_rv[1].interval(0.99)[1])
     elif plot_range[1] == 0:
         plot_range[1] = int(hist.mode_after_first_minima * 3)
     plot_range[0] = max(plot_range[0], 0)

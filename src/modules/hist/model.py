@@ -1,3 +1,4 @@
+import math
 import sys
 
 import numpy as np
@@ -9,11 +10,12 @@ from histogram import NtCardHistogram
 
 
 def update_components(params):
+    num_components = int(params[-1])
     components = [(params[0], scipy.stats.burr(*params[1:4]))]
-    for i in range(2):  # TODO: dynamically find number of nbinom components
+    for i in range(num_components):
         i_w = 4 + i * 3
         w, d, p = params[i_w : i_w + 3]
-        r = d * p / (1 - p) + 1
+        r = d * p / (1 - p + np.finfo(float).eps) + 1
         components.append((w, scipy.stats.nbinom(r, p)))
     return components
 
@@ -28,7 +30,9 @@ def score(x, components):
 
 def loss(params, x, y):
     fx = score(x, update_components(params)).sum(axis=0)
-    return np.abs(y - fx).sum()
+    sum_err = np.abs(y - fx).sum()
+    num_params = 4 + (params[-1] * 3)
+    return num_params / len(params) + math.log(sum_err + np.finfo(float).eps)
 
 
 def log_iteration(
@@ -69,6 +73,10 @@ class Model:
         return self.__components[2]
 
     @property
+    def copy_rvs(self):
+        return self.__components[3:]
+
+    @property
     def coverage(self):
         return self.peaks[1]
 
@@ -89,7 +97,7 @@ class Model:
         i = np.where(y2 >= y1)[0]
         return x[i[0]] if i.shape[0] > 0 else 0
 
-    def fit(self, hist: NtCardHistogram, config: dict = dict()) -> int:
+    def fit(self, hist, max_components=5, config=dict()):
         d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
         bounds = [
             (0, 1),
@@ -103,6 +111,10 @@ class Model:
             (d * 0.5, d * 1.5),
             (0, 1),
         ]
+        for i in range(max_components - 2):
+            d0 = d * (i + 3)
+            bounds.extend([(0, 1), (d0 * 0.5, d0 * 1.5), (0, 1)])
+        bounds.append((2, max_components))
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
         history = []
         max_iters = config.get("maxiter", 1000)
@@ -133,24 +145,12 @@ class Model:
             mutation=config.get("mutation", (0.3, 1.2)),
             recombination=config.get("recombination", 0.8),
             strategy=config.get("strategy", "best1bin"),
-            polish=False,
+            polish=True,
+            integrality=[False] * (len(bounds) - 1) + [True],
         )
-        try:
-            p_cf, *_ = scipy.optimize.curve_fit(
-                lambda x, *p: score(x, update_components(p)).sum(axis=0),
-                xdata=x,
-                ydata=y,
-                p0=opt.x,
-                bounds=list(zip(*bounds)),
-            )
-            polished = loss(p_cf, x, y) <= loss(opt.x, x, y)
-            params = p_cf if polished else opt.x
-        except (RuntimeError, scipy.optimize.OptimizeWarning):
-            polished = False
-            params = opt.x
         progress_bar.close()
-        components = update_components(params)
+        components = update_components(opt.x)
         if nbinom_mode(components[1][1]) > nbinom_mode(components[2][1]):
             components[1], components[2] = components[2], components[1]
         self.__components = components
-        return opt.nit, loss(params, x, y), history, polished
+        return opt.nit, loss(opt.x, x, y), history

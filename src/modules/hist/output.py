@@ -78,6 +78,8 @@ def save_plot(
         ax.plot(x_range, y_model[0, :], label=f"Errors")
         ax.plot(x_range, y_model[1, :], label="Heterozygous")
         ax.plot(x_range, y_model[2, :], label="Homozygous")
+        for i in range(3, y_model.shape[0]):
+            ax.plot(x_range, y_model[2, :], label=f"Copy {i}")
         ax.plot(x_range, y_model.sum(axis=0), label="Fitted model", ls="--", lw=2.5)
     handles, labels = ax.get_legend_handles_labels()
     handles.insert(0, matplotlib.lines.Line2D([], [], linestyle=""))
