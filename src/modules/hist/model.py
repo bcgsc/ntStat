@@ -30,8 +30,7 @@ def score(x, components):
 def loss(params, x, y):
     fx = score(x, update_components(params)).sum(axis=0)
     sum_err = np.abs(y - fx).sum()
-    num_params = 4 + (params[-1] * 3)
-    return num_params / len(params) + math.log(sum_err + np.finfo(float).eps)
+    return 2 * params[-1] / len(params) + math.log(sum_err + np.finfo(float).eps)
 
 
 def log_iteration(
