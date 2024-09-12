@@ -126,7 +126,7 @@ def run(cmd_args: list[str]) -> int:
         dataset_rows.append(["Coverage", f"{model.coverage:.1f}x"])
         dataset_rows.append(["Robustness", f"{num_robust / hist.num_total * 100:.2f}%"])
         dataset_rows.append(["Heterozygosity", f"{heterozygosity * 100:.2f}%"])
-        dataset_rows.append(["Genome size (hap.)", utils.format_bp(genome_size)])
+        dataset_rows.append(["Genome size", utils.format_bp(genome_size)])
 
     table_printer.print("K-mer statistics", *kmer_stats_rows)
     table_printer.print("Thresholds", *thresh_rows)
