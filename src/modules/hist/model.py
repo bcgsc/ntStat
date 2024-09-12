@@ -1,4 +1,3 @@
-import math
 import sys
 
 import numpy as np
@@ -29,8 +28,7 @@ def score(x, components):
 
 def loss(params, x, y):
     fx = score(x, update_components(params)).sum(axis=0)
-    sum_err = np.abs(y - fx).sum()
-    return 2 * params[-1] / len(params) + math.log(sum_err + np.finfo(float).eps)
+    return np.abs(y - fx).sum() + params[-1] * 3 / (len(params) - 5)
 
 
 def log_iteration(
@@ -80,7 +78,7 @@ class Model:
 
     @property
     def peaks(self):
-        return np.array([nbinom_mode(rv) for _, rv in self.__components[1:]])
+        return np.array([rv.mean() for _, rv in self.__components[1:]])
 
     def pdf(self, x):
         return self.score_components(x).sum(axis=0)
@@ -95,7 +93,7 @@ class Model:
         i = np.where(y2 >= y1)[0]
         return x[i[0]] if i.shape[0] > 0 else 0
 
-    def fit(self, hist, max_components=5, config=dict()):
+    def fit(self, hist, max_components=4, config=dict()):
         d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
         bounds = [
             (0, 1),
@@ -103,10 +101,10 @@ class Model:
             (0, 2),
             (0, 2),
             (0, 1),
-            (hist.first_minima, d),
+            (hist.first_minima, d * 3),
             (0, 1),
             (0, 1),
-            (d * 0.5, d * 1.5),
+            (hist.first_minima, d * 3),
             (0, 1),
         ]
         for i in range(max_components - 2):
@@ -148,7 +146,6 @@ class Model:
         )
         progress_bar.close()
         components = update_components(opt.x)
-        if nbinom_mode(components[1][1]) > nbinom_mode(components[2][1]):
-            components[1], components[2] = components[2], components[1]
-        self.__components = components
+        sorted_nbinoms = sorted(components[1:], key=lambda c: c[1].mean())
+        self.__components = [components[0]] + list(sorted_nbinoms)
         return opt.nit, loss(opt.x, x, y), history
