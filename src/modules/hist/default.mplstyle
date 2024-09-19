@@ -1,5 +1,5 @@
 figure.dpi: 300
-figure.figsize: 6.5, 4
+figure.figsize: 7, 4
 figure.autolayout: True
 
 axes.facecolor: EBF1F5
