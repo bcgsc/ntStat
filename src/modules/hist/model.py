@@ -1,14 +1,11 @@
-import sys
-
 import numpy as np
 import scipy.optimize
 import scipy.special
 import scipy.stats
-import tqdm
 
 
 def update_components(params):
-    num_components = int(params[-1])
+    num_components = (len(params) - 4) // 3
     components = [(params[0], scipy.stats.burr(*params[1:4]))]
     for i in range(num_components):
         i_w = 4 + i * 3
@@ -28,18 +25,15 @@ def score(x, components):
 
 def loss(params, x, y):
     fx = score(x, update_components(params)).sum(axis=0)
-    return np.abs(y - fx).sum() + params[-1] * 3 / (len(params) - 5)
+    return np.abs(y - fx).sum()
 
 
 def log_iteration(
     intermediate_result: scipy.optimize.OptimizeResult,
     history: list,
-    progress_bar: tqdm.tqdm,
 ):
     components = update_components(intermediate_result.x)
     history.append((components, intermediate_result.fun))
-    progress_bar.update()
-    progress_bar.set_postfix(loss=intermediate_result.fun)
 
 
 def nbinom_mode(rv):
@@ -93,38 +87,22 @@ class Model:
         i = np.where(y2 >= y1)[0]
         return x[i[0]] if i.shape[0] > 0 else 0
 
-    def fit(self, hist, max_components=4, config=dict()):
-        d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
+    def fit(self, hist, num_components=2, config=dict()):
         bounds = [
             (0, 1),
             (0, 2),
             (0, 2),
             (0, 2),
-            (0, 1),
-            (hist.first_minima, d * 3),
-            (0, 1),
-            (0, 1),
-            (hist.first_minima, d * 3),
-            (0, 1),
         ]
-        for i in range(max_components - 2):
-            d0 = d * (i + 3)
-            bounds.extend([(0, 1), (d0 * 0.5, d0 * 1.5), (0, 1)])
-        bounds.append((2, max_components))
+        d = hist.as_distribution()[hist.first_minima :].argmax() + hist.first_minima + 1
+        for _ in range(num_components):
+            bounds.extend([(0, 1), (hist.first_minima, d * 3), (0, 1)])
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
         history = []
         max_iters = config.get("maxiter", 1000)
-        progress_bar = tqdm.tqdm(
-            desc="Fitting model",
-            total=max_iters,
-            disable=None,
-            file=sys.stdout,
-            leave=False,
-        )
         callback = lambda intermediate_result: log_iteration(
             intermediate_result,
             history,
-            progress_bar=progress_bar,
         )
         opt = scipy.optimize.differential_evolution(
             func=loss,
@@ -142,9 +120,7 @@ class Model:
             recombination=config.get("recombination", 0.8),
             strategy=config.get("strategy", "best1bin"),
             polish=True,
-            integrality=[False] * (len(bounds) - 1) + [True],
         )
-        progress_bar.close()
         components = update_components(opt.x)
         sorted_nbinoms = sorted(components[1:], key=lambda c: c[1].mean())
         self.__components = [components[0]] + list(sorted_nbinoms)
