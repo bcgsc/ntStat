@@ -122,11 +122,13 @@ def run(cmd_args: list[str]) -> int:
         thresh_rows.append(["Heterozygous peak", np.rint(model.peaks[0]).astype(int)])
         thresh_rows.append(["Homozygous peak", np.rint(model.peaks[1]).astype(int)])
         heterozygosity = num_heterozygous / num_robust
-        genome_size = num_robust / model.coverage
+        min_genome_size = num_robust / model.coverage
+        max_genome_size = hist.num_total / model.coverage
         dataset_rows.append(["Est. coverage (C)", f"{model.coverage:.1f}x"])
         dataset_rows.append(["Robust k-mer rate (R)", f"{num_robust / hist.num_total * 100:.2f}%"])
         dataset_rows.append(["Heterozygosity", f"{heterozygosity * 100:.2f}%"])
-        dataset_rows.append(["Genome size (RD/C)", utils.format_bp(genome_size)])
+        dataset_rows.append(["Min genome size (D/C)", utils.format_bp(min_genome_size)])
+        dataset_rows.append(["Max genome size (RD/C)", utils.format_bp(max_genome_size)])
 
     table_printer.print("K-mer statistics", *kmer_stats_rows)
     table_printer.print("Thresholds", *thresh_rows)
