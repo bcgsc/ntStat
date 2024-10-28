@@ -1,19 +1,21 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+jobs:
 
-trigger:
-- main
+- job:
+  displayName: ubuntu-latest
+  pool:
+    vmImage: 'ubuntu-latest'
 
-pool:
-  vmImage: ubuntu-latest
+  steps:
+  - checkout: self
+    persistCredentials: true
+    submodules: true
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+  - script: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      conda env create --file environment.yml
+    displayName: Setup conda environment
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  - script: |
+      meson setup build
+      meson install -C build
+    displayName: Compile ntStat
