@@ -14,8 +14,6 @@ dependencies:
   - numpy
   - pandas
   - pybind11
-  - python
-  - scikit-image
   - scikit-learn
   - scipy
   - tabulate
