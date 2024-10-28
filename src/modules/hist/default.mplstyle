@@ -1,5 +1,5 @@
 figure.dpi: 300
-figure.figsize: 7, 4
+figure.figsize: 6.75, 4
 figure.autolayout: True
 
 axes.facecolor: EBF1F5
@@ -8,6 +8,10 @@ axes.prop_cycle: cycler("color", ["CFD8DD", "D90429", "0077B6", "D8BF1C", "2B2D4
 axes.grid: True
 axes.axisbelow: True
 axes.titlelocation: left
+
+font.size: 12
+legend.fontsize: 12
+legend.title_fontsize: 11
 
 grid.color: fffdf7
 grid.linestyle: -
