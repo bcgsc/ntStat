@@ -16,6 +16,7 @@ jobs:
     displayName: Setup conda environment
 
   - script: |
+      conda activate ntstat
       meson setup build
       meson install -C build
     displayName: Compile ntStat
