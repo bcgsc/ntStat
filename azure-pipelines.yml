@@ -12,7 +12,7 @@ jobs:
 
   - script: |
       echo "##vso[task.prependpath]$CONDA/bin"
-      conda env create --file environment.yml
+      conda env create --file environment.yaml
     displayName: Setup conda environment
 
   - script: |
