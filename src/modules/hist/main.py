@@ -86,8 +86,6 @@ def run(cmd_args: list[str]) -> int:
         t0 = time.time()
         num_iters, final_error, history = model.fit(hist, args.ploidy, args.config)
         time_elapsed = time.time() - t0
-    print("Histogram shape (y-axis in log scale):")
-    output.print_hist(hist.values)
 
     x_crossover = 0
     table_printer = output.TablePrinter(args.table_format)
