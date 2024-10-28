@@ -1,4 +1,4 @@
-name: ntstat
+name: ntstat_test
 channels:
   - bioconda
   - conda-forge
@@ -14,6 +14,7 @@ dependencies:
   - numpy
   - pandas
   - pybind11
+  - python>=3.10
   - scikit-learn
   - scipy
   - tabulate
