@@ -17,6 +17,8 @@ jobs:
 
   - script: |
       source activate ntstat
+      export CFLAGS="$CFLAGS $(python3-config --cflags)"
+      export LDFLAGS="$LDFLAGS $(python3-config --ldflags)"
       meson setup build
       meson install -C build
     displayName: Compile ntStat
