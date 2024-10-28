@@ -8,3 +8,11 @@ dependencies:
   - btllib>=1.7.2
   - cpp-argparse
   - cpp-tabulate
+  - kneed
+  - matplotlib
+  - numpy
+  - pandas
+  - scikit-learn
+  - scipy
+  - tabulate
+  - tqdm
