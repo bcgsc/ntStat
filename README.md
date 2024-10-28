@@ -35,7 +35,7 @@ Optional: Add `--destdir PREFIX` to `meson install` to change the installation p
 To install all dependencies in a fresh conda environment called `ntstat`:
 
 ```shell
-conda env create --file environment.yml
+conda env create --file environment.yaml
 ```
 
 ## General dependencies
