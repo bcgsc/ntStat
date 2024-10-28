@@ -8,7 +8,7 @@
 
 #include "utils.hpp"
 
-/* if cmin > 2 and cmax < 255 */
+/* if cmin >= 2 and cmax < 255 */
 template<class HashFunction, class OutputBloomFilter>
 inline void
 process_read(HashFunction& hash_fn,
@@ -189,7 +189,7 @@ process(const std::vector<std::string>& read_files,
   const bool using_kmers = seeds.size() == 0;
   const auto bf_size_str = human_readable(bf_size);
   const auto cbf_size_str = human_readable(cbf_size);
-  if (cmin > 2 && cmax < 255) {
+  if (cmin >= 2 && cmax < 255) {
     timer.start(" allocating distincts bloom filter (" + bf_size_str + ")");
     btllib::BloomFilter bf(bf_size, out.get_hash_num());
     timer.stop();
