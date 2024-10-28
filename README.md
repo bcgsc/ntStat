@@ -1,4 +1,4 @@
-ntStat is a toolkit that uses Bloom filters to track both *k*-mer count and depth information for use in downstream applications. ntStat also models the *k*-mer count histogram using a mixture model, and infers valuable insights about the genome, sequencing data, and individual *k*-mers, *de novo*.
+ntStat is a toolkit that uses Bloom filters to track both *k*-mer count and depth information for use in downstream applications. ntStat also models the *k*-mer count histogram using a mixture model, and infers valuable insights about the genome (size and heterozygosity), sequencing data (ratio of non-erroneous *k*-mers), and individual *k*-mers (probability of a *k*-mer being erroneous, given its count), *de novo*.
 
 **Contents**
 - [Installation](#installation)
@@ -19,11 +19,11 @@ ntStat is a toolkit that uses Bloom filters to track both *k*-mer count and dept
 
 ## From source
 
-First, ensure all [Dependencies](#dependencies) are available in the setup environment. Then, install ntStat using `meson`:
+- Make sure all [dependencies](#dependencies) are available in the setup environment.
+- Download the latest [release tarball](https://github.com/bcgsc/ntStat/releases)
+- Install ntStat using `meson` by running the following commands in the project's root directory:
 
 ```shell
-git clone https://github.com/bcgsc/ntStat.git
-cd ntStat
 meson setup build
 meson install -C build
 ```
@@ -31,6 +31,12 @@ meson install -C build
 Optional: Add `--destdir PREFIX` to `meson install` to change the installation path prefix to `PREFIX`, containing the `bin` directory for the main executable and `lib` for the modules.
 
 # Dependencies
+
+To install all dependencies in a fresh conda environment called `ntstat`:
+
+```shell
+conda env create --file environment.yml
+```
 
 ## General dependencies
 
@@ -53,7 +59,6 @@ pandas
 scikit-learn
 scipy
 tabulate
-termplotlit
 tqdm
 ```
 
@@ -64,7 +69,7 @@ tqdm
 Calculate TF-IDF information from sequencing data. This module outputs two counting Bloom filters: One for *k*-mer/seed counts (TF) and other for depths (DF). The number of reads will also be printed to stdout.
 
 ```
-Usage: count [--help] [--version] [-k VAR] [-s VAR] -f VAR [-e VAR] [-b VAR] [--long] [-t VAR] -o VAR reads
+Usage: ntstat count [--help] [--version] [-k VAR] [-s VAR] -f VAR [-e VAR] [-b VAR] [--long] [-t VAR] -o VAR reads
 
 Positional arguments:
   reads          path to sequencing data file(s) [nargs: 0 or more] [required]
@@ -76,7 +81,7 @@ Optional arguments:
   -s             path to spaced seeds file (one per line, if -k not specified) 
   -f             path to k-mer spectrum file (from ntCard) [required]
   -e             target output false positive rate [nargs=0..1] [default: 0.0001]
-  -b             output BF/CBF size (bytes) 
+  -b             size of each output CBF (bytes) 
   --long         optimize for long read data 
   -t             number of threads [nargs=0..1] [default: 1]
   -o             path to store output file [required]
@@ -119,7 +124,7 @@ Optional arguments:
 Converts information from a BF/CBF to TSV format.
 
 ```
-usage: query [-h] -b B [-s S] -o O data [data ...]
+usage: ntstat query [-h] -b B [-s S] -o O data [data ...]
 
 positional arguments:
   data        path to query data
@@ -139,13 +144,13 @@ options:
 Fits a mixture model to the *k*-mer count histogram to estimate *k*-mer error and heterozygous probabilities, genome size, and thresholds useful for the `filter` command.
 
 ```
-usage: main.py [-h]
+usage: ntstat hist [-h]
                [-f {asciidoc,double_grid,double_outline,fancy_grid,fancy_outline,github,grid,heavy_grid,heavy_outline,html,jira,latex,latex_booktabs,latex_longtable,latex_raw,mediawiki,mixed_grid,mixed_outline,moinmoin,orgtbl,outline,pipe,plain,presto,pretty,psql,rounded_grid,rounded_outline,rst,simple,simple_grid,simple_outline,textile,tsv,unsafehtml,youtrack}]
                [-m STYLE] [-t TITLE] [--y-log | --no-y-log] [-r PLOT_RANGE] [-o PLOT] [--probs PROBS] [--fit-gif FIT_GIF] [-c CONFIG] [--no-model]
                path
 
 positional arguments:
-  path                  k-mer spectrum file
+  path                  k-mer spectrum file (from ntCard)
 
 options:
   -h, --help            show this help message and exit
@@ -169,7 +174,7 @@ options:
 ```
 
 - ntStat prints comprehensive information about the model, dataset, and *k*-mers. This information can be in various formats supported by the [tabulate](https://github.com/astanin/python-tabulate) package, set by the `-f` parameter.
-- The differential evolution algorithm's parameters can be controlled by a JSON file passed to `-c`. Refer to [scipy's documentation]() for information about these parameters. Example configuration for increasing exploration, in case ntStat fails to find a good model:
+- The differential evolution algorithm's parameters can be controlled by a JSON file passed to `-c`. Refer to [scipy's documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.differential_evolution.html) for information about these parameters. Example configuration for increasing exploration, in case ntStat fails to find a good model:
 
 ```JSON
 {
