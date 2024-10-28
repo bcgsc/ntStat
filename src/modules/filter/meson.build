@@ -3,6 +3,7 @@ deps = [
     dependency('argparse'),
     meson.get_compiler('cpp').find_library('btllib'),
     dependency('openmp'),
+    dependency('tabulate'),
 ]
 
 py.extension_module(
