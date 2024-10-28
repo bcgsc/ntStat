@@ -35,4 +35,4 @@ indicators = declare_dependency(include_directories: include_directories('vendor
 subdir('src/modules/filter')
 subdir('src/modules/hist')
 subdir('src/modules/query')
-subdir('src/modules/rarity')
+subdir('src/modules/count')

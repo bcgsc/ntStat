@@ -19,7 +19,7 @@ public:
 
   ProgramArguments(const std::vector<std::string>& argv)
   {
-    argparse::ArgumentParser parser("rarity");
+    argparse::ArgumentParser parser("count");
     parser.add_argument("-k").help("k-mer length").scan<'u', unsigned>();
     parser.add_argument("-s").help("path to spaced seeds file (one per line, if -k not specified)");
     parser.add_argument("-f").help("path to k-mer spectrum file (from ntCard)").required();

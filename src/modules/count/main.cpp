@@ -8,7 +8,7 @@
 
 #include "args.hpp"
 #include "bf_utils.hpp"
-#include "rarity.hpp"
+#include "count.hpp"
 #include "utils.hpp"
 
 int
@@ -63,7 +63,7 @@ run(std::vector<std::string> argv)
   return EXIT_SUCCESS;
 }
 
-PYBIND11_MODULE(rarity, m)
+PYBIND11_MODULE(count, m)
 {
   m.def("run", &run);
 }

@@ -6,7 +6,7 @@ deps = [
 ]
 
 py.extension_module(
-    'rarity',
+    'count',
     'main.cpp',
     dependencies: py_deps + deps,
     install: true,

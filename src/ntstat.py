@@ -5,7 +5,7 @@ import signal
 import sys
 
 VERSION = "@PROJECT_VERSION@"
-MODULES = ["filter", "hist", "query", "rarity"]
+MODULES = ["count", "filter", "hist", "query"]
 
 
 def print_help():
