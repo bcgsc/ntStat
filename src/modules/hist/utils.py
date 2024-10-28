@@ -52,18 +52,16 @@ def sum_absolute_error(hist: NtCardHistogram, model: Model):
 
 
 def count_robust_kmers(hist: NtCardHistogram, model: Model):
-    x = np.arange(1, hist.max_count + 1)
-    y = model.score_components(x)[1:, :].sum(axis=0) * hist.num_distinct
-    return int((x * y).sum())
-
-
-def count_homozygous_kmers(hist: NtCardHistogram, model: Model):
-    x = np.arange(1, hist.max_count + 1)
-    y = model.score_components(x)[2, :] * hist.num_distinct
-    return int((x * y).sum())
+    c = min(model.homozygous_rv[1].interval(0.9995)[1], hist.max_count)
+    x = np.arange(c)
+    h = hist.values[x.astype(int) - 1]
+    y = model.get_responsibilities(x)[1:, :].sum(axis=0) * h
+    return int(sum(x * y) / sum(x * h) * hist.num_total)
 
 
 def count_heterozygous_kmers(hist: NtCardHistogram, model: Model):
-    x = np.arange(1, hist.max_count + 1)
-    y = model.score_components(x)[1, :] * hist.num_distinct
-    return int((x * y).sum())
+    c = min(model.homozygous_rv[1].interval(0.9995)[1], hist.max_count)
+    x = np.arange(c)
+    h = hist.values[x.astype(int) - 1]
+    y = model.get_responsibilities(x)[1:-1, :].sum(axis=0) * h
+    return int(sum(x * y) / sum(x * h) * count_robust_kmers(hist, model))

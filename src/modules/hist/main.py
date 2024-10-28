@@ -13,7 +13,7 @@ from model import Model
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="k-mer spectrum file")
-    parser.add_argument("-k", "--kmer-size", help="k-mer size", type=int, required=True)
+    parser.add_argument("-p", "--ploidy", help="genome ploidy", type=int, default=2)
     parser.add_argument(
         "-f",
         "--table-format",
@@ -45,12 +45,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("-o", "--plot", help="path to output plot")
     parser.add_argument(
-        "-p",
         "--probs",
         help="path to output probabilities in csv format",
     )
     parser.add_argument(
-        "-g",
         "--fit-gif",
         help="path to output model fit history animation",
     )
@@ -59,6 +57,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--config",
         help="path to differential evolution config file (json)",
         type=utils.validate_config_json,
+        default=dict(),
     )
     parser.add_argument("--no-model", action="store_true")
     return parser.parse_args(argv)
@@ -79,13 +78,13 @@ def run(cmd_args: list[str]) -> int:
         ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
     ]
     dataset_rows = [
-        ["Dataset size (D)", f"{utils.format_bp(hist.num_total)}"],
+        ["Dataset size", f"{utils.format_bp(hist.num_total)}"],
     ]
 
     model = Model()
     if not args.no_model:
         t0 = time.time()
-        num_iters, final_error, history = model.fit(hist)
+        num_iters, final_error, history = model.fit(hist, args.ploidy, args.config)
         time_elapsed = time.time() - t0
     print("Histogram shape (y-axis in log scale):")
     output.print_hist(hist.values)
@@ -112,32 +111,29 @@ def run(cmd_args: list[str]) -> int:
             ["Wall clock time", f"{time_elapsed:.3f}s"],
         )
         num_robust = utils.count_robust_kmers(hist, model)
-        num_homozygous = utils.count_homozygous_kmers(hist, model)
         num_heterozygous = utils.count_heterozygous_kmers(hist, model)
+        robust_rate = num_robust / hist.num_total
+        heterozygosity = num_heterozygous / num_robust
+        genome_size = num_robust / model.coverage
+        x_crossover = model.get_weak_robust_crossover(np.arange(1, hist.max_count + 1))
         kmer_stats_rows.insert(1, ["Number of robust k-mers", num_robust])
         kmer_stats_rows.insert(2, ["Number of heterozygous k-mers", num_heterozygous])
-        kmer_stats_rows.insert(3, ["Number of homozygous k-mers", num_homozygous])
-        x_crossover = model.get_weak_robust_crossover(np.arange(1, hist.max_count + 1))
         thresh_rows.append(["Weak/robust crossover", x_crossover or "N/A"])
         thresh_rows.append(["Heterozygous peak", np.rint(model.peaks[0]).astype(int)])
         thresh_rows.append(["Homozygous peak", np.rint(model.peaks[1]).astype(int)])
-        heterozygosity = num_heterozygous / num_robust
-        min_genome_size = num_robust / model.coverage
-        max_genome_size = hist.num_total / model.coverage
-        dataset_rows.append(["Est. coverage (C)", f"{model.coverage:.1f}x"])
-        dataset_rows.append(["Robust k-mer rate (R)", f"{num_robust / hist.num_total * 100:.2f}%"])
+        dataset_rows.append(["Coverage", f"{model.coverage:.1f}x"])
+        dataset_rows.append(["Robust rate", f"{robust_rate * 100:.2f}%"])
         dataset_rows.append(["Heterozygosity", f"{heterozygosity * 100:.2f}%"])
-        dataset_rows.append(["Min genome size (RD/C)", utils.format_bp(min_genome_size)])
-        dataset_rows.append(["Max genome size (D/C)", utils.format_bp(max_genome_size)])
+        dataset_rows.append(["Genome size", utils.format_bp(genome_size)])
 
     table_printer.print("K-mer statistics", *kmer_stats_rows)
     table_printer.print("Thresholds", *thresh_rows)
-    table_printer.print("Data/genome characteristics", *dataset_rows)
+    table_printer.print("Estimated characteristics", *dataset_rows)
 
     plot_range = args.plot_range or [1, hist.max_count + 1]
     if plot_range[1] == 0 and model.converged:
         last_rv = model.copy_rvs[-1] if len(model.copy_rvs) > 0 else model.homozygous_rv
-        plot_range[1] = int(last_rv[1].interval(0.99)[1])
+        plot_range[1] = int(last_rv[1].interval(0.999)[1])
     elif plot_range[1] == 0:
         plot_range[1] = int(hist.mode_after_first_minima * 3)
     plot_range[0] = max(plot_range[0], 0)
@@ -147,7 +143,6 @@ def run(cmd_args: list[str]) -> int:
         output.save_plot(
             hist,
             model,
-            args.kmer_size,
             args.style,
             args.title,
             dataset_rows,

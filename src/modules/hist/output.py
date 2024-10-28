@@ -57,7 +57,6 @@ def print_hist(hist: numpy.typing.NDArray[np.uint64]) -> None:
 def save_plot(
     hist: NtCardHistogram,
     model: Model,
-    kmer_size: int,
     style: str,
     title: str,
     table_rows: list[list[str]],
@@ -68,18 +67,16 @@ def save_plot(
     x_range = np.arange(plot_range[0], plot_range[1])
     plt.style.use(style)
     fig, ax = plt.subplots()
-    ax.set_title(title)
-    ax.set_xlabel(f"$k$-mer count ($k$ = {kmer_size})")
+    ax.set_title(title.replace("^", "$"))
+    ax.set_xlabel(f"$k$-mer count")
     ax.set_ylabel("Frequency")
     ax.bar(x_range, hist.values[x_range - 1], width=1, label="Histogram")
     ax.plot([], [])  # shift the color map
     if model.converged:
         y_model = model.score_components(x_range) * hist.num_distinct
         ax.plot(x_range, y_model[0, :], label=f"Errors")
-        ax.plot(x_range, y_model[1, :], label="Heterozygous")
-        ax.plot(x_range, y_model[2, :], label="Homozygous")
-        for i in range(3, y_model.shape[0]):
-            ax.plot(x_range, y_model[2, :], label=f"Copy {i}")
+        ax.plot(x_range, y_model[1:-1, :].sum(axis=0), label="Heterozygous")
+        ax.plot(x_range, y_model[-1, :], label="Homozygous")
         ax.plot(x_range, y_model.sum(axis=0), label="Fitted model", ls="--", lw=2.5)
     handles, labels = ax.get_legend_handles_labels()
     handles.insert(0, matplotlib.lines.Line2D([], [], linestyle=""))
@@ -92,7 +89,7 @@ def save_plot(
         loc="upper left",
         bbox_to_anchor=(1.01, 1.02),
         frameon=False,
-        title=table,
+        title="Estimations:\n" + table,
         alignment="left",
     )
     plt.setp(legend.get_title(), family="Monospace")
