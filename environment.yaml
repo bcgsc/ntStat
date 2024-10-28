@@ -1,4 +1,4 @@
-name: ntstat_test
+name: ntstat
 channels:
   - bioconda
   - conda-forge
