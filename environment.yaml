@@ -15,7 +15,7 @@ dependencies:
   - pandas
   - pybind11
   - python
-  - python-dev
+  - python-devtools
   - scikit-learn
   - scipy
   - tabulate
