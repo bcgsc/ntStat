@@ -16,6 +16,7 @@ jobs:
     displayName: Setup environment
 
   - script: |
+      source activate ntstat
       ls $CONDA_PREFIX/include/python3.1*
       pybind11-config --includes
       python3-config --cflags
