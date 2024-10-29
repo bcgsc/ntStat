@@ -69,8 +69,9 @@ conda env create --file environment.yaml
 ## C++ libraries
 
 - [btllib](https://github.com/bcgsc/btllib) >=1.7.3
-- [argparse](https://github.com/p-ranav/argparse)
 - [pybind11](https://github.com/pybind/pybind11)
+- [argparse](https://github.com/p-ranav/argparse)
+- [tabulate](https://github.com/p-ranav/tabulate)
 
 ## Python packages
 ```
