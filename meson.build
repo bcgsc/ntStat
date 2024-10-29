@@ -1,12 +1,11 @@
 project(
     'ntStat',
     'cpp',
-    version: '0.1',
+    version: '1.0.0',
     license: 'GPL-3',
     default_options: [
         'cpp_std=c++17',
-        'werror=true',
-        'warning_level=3',
+        'werror=false',
         'optimization=3',
         'b_lto=true',
     ],
@@ -19,7 +18,8 @@ configure_file(
     output: 'ntstat',
     configuration: conf,
     install: true,
-    install_dir: 'bin'
+    install_dir: 'bin',
+    install_mode: 'rwxr-xr-x',
 )
 
 pybind11_conf = find_program('pybind11-config')
@@ -35,4 +35,4 @@ indicators = declare_dependency(include_directories: include_directories('vendor
 subdir('src/modules/filter')
 subdir('src/modules/hist')
 subdir('src/modules/query')
-subdir('src/modules/rarity')
+subdir('src/modules/count')

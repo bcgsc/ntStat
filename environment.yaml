@@ -5,6 +5,18 @@ channels:
 dependencies:
   - compilers
   - meson
+  - cmake
   - btllib>=1.7.2
   - cpp-argparse
   - cpp-tabulate
+  - kneed
+  - matplotlib
+  - numpy
+  - pandas
+  - pybind11
+  - python
+  - scikit-image
+  - scikit-learn
+  - scipy
+  - tabulate
+  - tqdm

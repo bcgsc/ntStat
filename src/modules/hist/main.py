@@ -1,13 +1,12 @@
 import argparse
-import sys
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import output
-import utils
-from histogram import NtCardHistogram
-from model import Model
+
+from . import output, utils
+from .histogram import NtCardHistogram
+from .model import Model
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -60,7 +59,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=dict(),
     )
     parser.add_argument("--no-model", action="store_true")
-    return parser.parse_args(argv)
+    return parser.parse_args(argv[1:])
 
 
 def run(cmd_args: list[str]) -> int:
@@ -86,8 +85,6 @@ def run(cmd_args: list[str]) -> int:
         t0 = time.time()
         num_iters, final_error, history = model.fit(hist, args.ploidy, args.config)
         time_elapsed = time.time() - t0
-    print("Histogram shape (y-axis in log scale):")
-    output.print_hist(hist.values)
 
     x_crossover = 0
     table_printer = output.TablePrinter(args.table_format)
@@ -165,7 +162,3 @@ def run(cmd_args: list[str]) -> int:
         )
         print(f"Saved fit history gif to {args.fit_gif}")
     return 0
-
-
-if __name__ == "__main__":
-    exit(run(sys.argv[1:]))

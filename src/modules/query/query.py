@@ -51,7 +51,3 @@ def run(argv: list[str]):
                     out_file.write(f"{kmer}\t{value}{os.linesep}")
         print("done")
     return 0
-
-
-if __name__ == "__main__":
-    run(sys.argv)

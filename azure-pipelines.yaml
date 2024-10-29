@@ -1,0 +1,22 @@
+jobs:
+
+- job:
+  displayName: ubuntu-latest
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  steps:
+  - checkout: self
+    persistCredentials: true
+    submodules: true
+
+  - script: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      conda env create --file environment.yaml
+    displayName: Setup environment
+
+  - script: |
+      source activate ntstat
+      meson setup build
+      meson install -C build
+    displayName: Compile ntStat
