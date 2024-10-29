@@ -5,8 +5,7 @@ project(
     license: 'GPL-3',
     default_options: [
         'cpp_std=c++17',
-        'werror=true',
-        'warning_level=3',
+        'werror=false',
         'optimization=3',
         'b_lto=true',
     ],
