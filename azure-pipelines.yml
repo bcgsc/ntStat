@@ -13,9 +13,6 @@ jobs:
   - script: |
       echo "##vso[task.prependpath]$CONDA/bin"
       conda env create --file environment.yaml
-      source activate ntstat
-      export CFLAGS="$CFLAGS $(python3-config --cflags)"
-      export LDFLAGS="$LDFLAGS $(python3-config --ldflags)"
     displayName: Setup environment
 
   - script: |
