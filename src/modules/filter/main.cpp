@@ -29,7 +29,7 @@ run(std::vector<std::string> argv)
   try {
     args = std::make_unique<ProgramArguments>(argv);
   } catch (const std::runtime_error& err) {
-    std::cerr << err.what() << args.get()->get_help_message();
+    std::cerr << err.what() << std::endl;
     return EXIT_FAILURE;
   }
   std::cout << args.get()->get_arg_summary();
