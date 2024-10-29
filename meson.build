@@ -8,6 +8,7 @@ project(
         'werror=false',
         'optimization=3',
         'b_lto=true',
+        'option=python.install_venv=auto',
     ],
 )
 
