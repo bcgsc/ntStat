@@ -5,7 +5,7 @@ import signal
 import sys
 
 VERSION = "@PROJECT_VERSION@"
-MODULES = ["count", "filter", "hist", "query"]
+MODULES = ["--version", "count", "filter", "hist", "query"]
 
 
 def print_help():
@@ -18,6 +18,9 @@ def main():
         print_help()
         exit(1)
     module_name = sys.argv[1]
+    if module_name == "--version":
+        print(VERSION)
+        exit(0)
     if module_name not in MODULES:
         print(f"invalid module: {module_name}", file=sys.stderr)
         print_help()

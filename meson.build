@@ -19,7 +19,8 @@ configure_file(
     output: 'ntstat',
     configuration: conf,
     install: true,
-    install_dir: 'bin'
+    install_dir: 'bin',
+    install_mode: 'rwxr-xr-x',
 )
 
 pybind11_conf = find_program('pybind11-config')
