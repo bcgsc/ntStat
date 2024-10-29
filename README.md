@@ -78,6 +78,7 @@ kneed
 matplotlib
 numpy
 pandas
+scikit-image
 scikit-learn
 scipy
 tabulate
