@@ -11,9 +11,11 @@ jobs:
     submodules: true
 
   - script: |
+      sudo apt-get update
+      sudo apt-get install -y python3-dev
       echo "##vso[task.prependpath]$CONDA/bin"
       conda env create --file environment.yaml
-    displayName: Setup conda environment
+    displayName: Setup environment
 
   - script: |
       source activate ntstat
