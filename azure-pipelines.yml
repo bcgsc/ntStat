@@ -14,9 +14,6 @@ jobs:
       echo "##vso[task.prependpath]$CONDA/bin"
       conda env create --file environment.yaml
       source activate ntstat
-      PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-      sudo apt-get update
-      sudo apt-get install -y python${PYTHON_VERSION}-dev
       export CFLAGS="$CFLAGS $(python3-config --cflags)"
       export LDFLAGS="$LDFLAGS $(python3-config --ldflags)"
     displayName: Setup environment
