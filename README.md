@@ -3,6 +3,8 @@ ntStat is a toolkit that uses Bloom filters to track both *k*-mer count and dept
 **Contents**
 - [Installation](#installation)
   - [From source](#from-source)
+    - [Changing the installation prefix](#changing-the-installation-prefix)
+    - [Installing in a specific directory](#installing-in-a-specific-directory)
 - [Dependencies](#dependencies)
   - [General dependencies](#general-dependencies)
   - [C++ libraries](#c-libraries)
@@ -28,9 +30,27 @@ meson setup build
 meson install -C build
 ```
 
-Optional: Add `--destdir PREFIX` to `meson install` to change the installation path prefix to `PREFIX`, containing the `bin` directory for the main executable and `lib` for the modules.
+### Changing the installation prefix
 
-**Make sure the `bin` and `lib` directories in the installation path are respectively available in `PATH` and `PYTHONPATH`.**
+Add `--prefix PREFIX` to `meson setup` to change the installation prefix to `PREFIX`. `--prefix=$CONDA_PREFIX` will install ntStat in the activated conda environment:
+
+```shell
+meson setup build --prefix=$CONDA_PREFIX
+meson install -C build
+```
+
+### Installing in a specific directory
+
+Add `--destdir DESTDIR` to `meson install` to change the installation path to `DESTDIR`, ignoring the prefix. This is useful for development purposes.
+
+**Make sure the `bin` and `site-packages` directories in the installation path are respectively available in `PATH` and `PYTHONPATH`:**
+
+```shell
+meson setup build
+meson install -C build --destdir install
+export PATH="$(pwd)/build/install/usr/local/bin/:$PATH"
+export PYTHONPATH="$(pwd)/build/install/usr/local/lib/python3.10/site-packages:$PYTHONPATH"
+```
 
 # Dependencies
 
