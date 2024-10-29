@@ -12,15 +12,19 @@ jobs:
 
   - script: |
       sudo apt-get update
-      sudo apt-get install -y python3-dev
+      sudo apt-get install -y python3.10-dev
       echo "##vso[task.prependpath]$CONDA/bin"
       conda env create --file environment.yaml
+      source activate ntstat
+      export CFLAGS="$CFLAGS $(python3-config --cflags)"
+      export LDFLAGS="$LDFLAGS $(python3-config --ldflags)"
+      PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+      sudo apt-get update
+      sudo apt-get install -y python${PYTHON_VERSION}-dev
     displayName: Setup environment
 
   - script: |
       source activate ntstat
-      export CFLAGS="$CFLAGS $(python3-config --cflags)"
-      export LDFLAGS="$LDFLAGS $(python3-config --ldflags)"
       meson setup build
       meson install -C build
     displayName: Compile ntStat
