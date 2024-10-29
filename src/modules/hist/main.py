@@ -59,7 +59,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=dict(),
     )
     parser.add_argument("--no-model", action="store_true")
-    return parser.parse_args(argv)
+    return parser.parse_args(argv[1:])
 
 
 def run(cmd_args: list[str]) -> int:
