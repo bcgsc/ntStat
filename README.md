@@ -30,6 +30,8 @@ meson install -C build
 
 Optional: Add `--destdir PREFIX` to `meson install` to change the installation path prefix to `PREFIX`, containing the `bin` directory for the main executable and `lib` for the modules.
 
+**Make sure the `bin` and `lib` directories in the installation path are respectively available in `PATH` and `PYTHONPATH`.**
+
 # Dependencies
 
 To install all dependencies in a fresh conda environment called `ntstat`:
