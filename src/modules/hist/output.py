@@ -1,18 +1,16 @@
 import functools
 import itertools
-import os
-import warnings
 
 import matplotlib.animation
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing
 import pandas as pd
 import tabulate
 import tqdm
-from histogram import NtCardHistogram
-from model import Model, score
+
+from .histogram import NtCardHistogram
+from .model import Model, score
 
 
 class TablePrinter:

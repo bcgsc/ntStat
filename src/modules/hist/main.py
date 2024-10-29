@@ -1,13 +1,12 @@
 import argparse
-import sys
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import output
-import utils
-from histogram import NtCardHistogram
-from model import Model
+
+from . import output, utils
+from .histogram import NtCardHistogram
+from .model import Model
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -163,7 +162,3 @@ def run(cmd_args: list[str]) -> int:
         )
         print(f"Saved fit history gif to {args.fit_gif}")
     return 0
-
-
-if __name__ == "__main__":
-    exit(run(sys.argv[1:]))

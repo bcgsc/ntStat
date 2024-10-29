@@ -5,8 +5,9 @@ import re
 import numpy as np
 import scipy.signal
 import scipy.stats
-from histogram import NtCardHistogram
-from model import Model
+
+from .histogram import NtCardHistogram
+from .model import Model
 
 
 def validate_plot_range_str(r_str: str) -> list[int, int]:

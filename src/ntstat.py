@@ -26,7 +26,7 @@ def main():
         print_help()
         exit(1)
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    module = importlib.import_module(module_name)
+    module = importlib.import_module(f"ntstat.{module_name}")
     exit(module.run(sys.argv[1:]))
 
 
