@@ -16,6 +16,13 @@ jobs:
     displayName: Setup environment
 
   - script: |
+      ls $CONDA_PREFIX/include/python3.1*
+      pybind11-config --includes
+      python3-config --cflags
+      python3-config --ldflags
+    displayName: Debug
+
+  - script: |
       source activate ntstat
       meson setup -Dpython.install_env=auto --prefix=$CONDA_PREFIX build
       meson install -C build
