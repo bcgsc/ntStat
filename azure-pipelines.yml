@@ -8,7 +8,6 @@ jobs:
   steps:
   - checkout: self
     persistCredentials: true
-    submodules: true
 
   - script: |
       echo "##vso[task.prependpath]$CONDA/bin"
@@ -20,3 +19,8 @@ jobs:
       meson setup --prefix=$CONDA_PREFIX build
       meson install -C build
     displayName: Compile ntStat
+  
+  - script: |
+      source activate ntstat
+      python -m unittest discover -s tests
+    displayName: Run tests
