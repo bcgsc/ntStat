@@ -1,7 +1,7 @@
 deps = [
-    indicators,
     dependency('argparse'),
     meson.get_compiler('cpp').find_library('btllib'),
+    dependency('indicators'),
     dependency('openmp'),
     dependency('tabulate'),
 ]

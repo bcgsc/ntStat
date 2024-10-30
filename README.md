@@ -62,8 +62,9 @@ conda env create --file environment.yaml
 
 ## General dependencies
 
-- [Meson](https://mesonbuild.com/Quick-guide.html) and a C++ compiler with C++17 support, only required for installation
 - Python >= 3.9
+- C++ compiler with C++17 support
+- [Meson](https://mesonbuild.com/Quick-guide.html) and [meson-python](https://mesonbuild.com/meson-python/)
 - [ntCard](https://github.com/bcgsc/ntCard)
 
 ## C++ libraries
@@ -71,6 +72,7 @@ conda env create --file environment.yaml
 - [btllib](https://github.com/bcgsc/btllib) >=1.7.3
 - [pybind11](https://github.com/pybind/pybind11)
 - [argparse](https://github.com/p-ranav/argparse)
+- [indicators](https://github.com/p-ranav/indicators)
 - [tabulate](https://github.com/p-ranav/tabulate)
 
 ## Python packages
