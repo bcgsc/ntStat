@@ -22,11 +22,19 @@ configure_file(
     install_mode: 'rwxr-xr-x',
 )
 
+python3_conf = find_program('python3-config')
+python3_include_path = run_command(python3_conf, ['--includes'], check: true).stdout().split('-I')[-1].strip()
+python3_ldflags = run_command(python3_conf, ['--ldflags'], check: true).stdout().strip().split()
+python_dep = declare_dependency(
+    include_directories: include_directories(python3_include_path),
+    link_args: python3_ldflags,
+)
+
 pybind11_conf = find_program('pybind11-config')
 pybind11_conf_ret = run_command(pybind11_conf, ['--includes'], check: true)
 pybind11_include = pybind11_conf_ret.stdout().split('-I')[-1].strip()
 pybind11 = declare_dependency(include_directories: [pybind11_include])
-py_deps = [pybind11, dependency('python3')]
+py_deps = [pybind11, python_dep]
 
 py = import('python').find_installation('python3')
 
