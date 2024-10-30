@@ -16,31 +16,7 @@ jobs:
     displayName: Setup environment
 
   - script: |
-      source $CONDA/bin/activate
-      conda activate ntstat
-      ls $CONDA_PREFIX/include/python3.1*
-      echo $CFLAGS
-      echo $CXXFLAGS
-      echo $C_INCLUDE_FLAGS
-      echo $CPLUS_INCLUDE_FLAGS
-      pybind11-config --includes
-      python3-config --cflags
-      python3-config --ldflags
-      echo $CPATH
-      echo $LD_LIBRARY_PATH
-      which python
-      python -V
-      which python3
-      python3 -V
-    displayName: Debug
-
-  - script: |
-      source $CONDA/bin/activate
-      conda activate ntstat
-      export CFLAGS="$(python3-config --cflags)"
-      export LDFLAGS="$(python3-config --ldflags)"
-      export CPATH=$CONDA_PREFIX/include/python3.12
-      meson setup -Dpython.install_env=auto --prefix=$CONDA_PREFIX build
-      cat build/compile_commands.json
+      source activate ntstat
+      meson setup --prefix=$CONDA_PREFIX build
       meson install -C build
     displayName: Compile ntStat
