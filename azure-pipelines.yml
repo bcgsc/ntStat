@@ -40,7 +40,7 @@ jobs:
       export CFLAGS="$(python3-config --cflags)"
       export LDFLAGS="$(python3-config --ldflags)"
       export CPATH=$CONDA_PREFIX/include/python3.12
-      meson setup --prefix=$CONDA_PREFIX build
+      meson setup -Dpython.install_env=auto --prefix=$CONDA_PREFIX build
       cat build/compile_commands.json
       meson install -C build
     displayName: Compile ntStat
