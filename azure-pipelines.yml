@@ -36,7 +36,7 @@ jobs:
       source $CONDA/bin/activate
       conda activate ntstat
       export CFLAGS="$(python3-config --cflags)"
-      export CXXFLAGS="$(python3-config --ldflags)"
+      export LDFLAGS="$(python3-config --ldflags)"
       meson setup --prefix=$CONDA_PREFIX build
       meson install -C build
     displayName: Compile ntStat
