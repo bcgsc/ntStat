@@ -29,6 +29,6 @@ jobs:
 
   - script: |
       source activate ntstat
-      meson setup --prefix=$CONDA_PREFIX build
+      meson setup -Dpython.install_env=auto --prefix=$CONDA_PREFIX build
       meson install -C build
     displayName: Compile ntStat
