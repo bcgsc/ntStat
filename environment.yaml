@@ -5,6 +5,7 @@ channels:
 dependencies:
   - compilers
   - meson
+  - meson-python
   - cmake
   - btllib>=1.7.2
   - cpp-argparse
