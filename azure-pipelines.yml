@@ -10,6 +10,10 @@ jobs:
     persistCredentials: true
     submodules: true
 
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.12'
+
   - script: |
       echo "##vso[task.prependpath]$CONDA/bin"
       conda env create --file environment.yaml
