@@ -26,6 +26,8 @@ jobs:
       pybind11-config --includes
       python3-config --cflags
       python3-config --ldflags
+      echo $CPATH
+      echo $LD_LIBRARY_PATH
       which python
       python -V
       which python3
