@@ -1,26 +1,40 @@
 jobs:
+  - job: linux
+    pool:
+      vmImage: "ubuntu-latest"
+    variables:
+      CONDA_CACHE_DIR: /usr/share/miniconda/envs
 
-- job:
-  displayName: ubuntu-latest
-  pool:
-    vmImage: 'ubuntu-latest'
+    steps:
+      - checkout: self
+        persistCredentials: "true"
 
-  steps:
-  - checkout: self
-    persistCredentials: true
+      - script: |
+          echo "##vso[task.prependpath]$CONDA/bin"
+          sudo chown -R $(whoami):$(id -ng) $(CONDA_CACHE_DIR)
+        displayName: Add conda to PATH
 
-  - script: |
-      echo "##vso[task.prependpath]$CONDA/bin"
-      conda env create --file environment.yaml
-    displayName: Setup environment
+      - task: Cache@2
+        displayName: Cache conda environment
+        inputs:
+          key: 'conda | "$(Agent.OS)" | environment.yaml'
+          restoreKeys: |
+            python | "$(Agent.OS)"
+            python
+          path: $(CONDA_CACHE_DIR)
+          cacheHitVar: CONDA_CACHE_RESTORED
 
-  - script: |
-      source activate ntstat
-      meson setup --prefix=$CONDA_PREFIX build
-      meson install -C build
-    displayName: Compile ntStat
-  
-  - script: |
-      source activate ntstat
-      python -m unittest discover -s tests
-    displayName: Run tests
+      - script: conda env create --quiet --file environment.yaml
+        displayName: Create conda environment
+        condition: eq(variables.CONDA_CACHE_RESTORED, 'false')
+
+      - script: |
+          source activate ntstat
+          meson setup --prefix=$CONDA_PREFIX build
+          meson install -C build
+        displayName: Compile project
+
+      - script: |
+          source activate ntstat
+          python -m unittest discover -s tests
+        displayName: Run tests
