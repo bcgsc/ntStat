@@ -18,6 +18,7 @@ save(BloomFilter& bf, const std::string& path)
   std::cout << std::endl << "actual output false positive rate: " << bf.get_fpr() << std::endl;
   Timer timer;
   timer.start("[-o] saving to " + path);
+  std::locale::global(std::locale::classic());
   bf.save(path);
   timer.stop();
 }
@@ -99,7 +100,7 @@ run(std::vector<std::string> argv)
     btllib::KmerBloomFilter out_include(out_size, num_hashes, kmer_length);
     timer.stop();
     timer.start(" allocating excludes btllib::KmerBloomFilter (" + excludes_size_str + ")");
-    btllib::KmerBloomFilter out_exclude(out_size, num_hashes, kmer_length);
+    btllib::KmerBloomFilter out_exclude(excludes_size + 1, num_hashes, kmer_length);
     timer.stop();
     BloomFilterWrapper out(out_include, out_exclude);
     process(read_files, long_mode, kmer_length, seeds, f0, cmin, cmax, bf_size, cbf_size, out);
@@ -111,11 +112,11 @@ run(std::vector<std::string> argv)
     process(read_files, long_mode, kmer_length, seeds, f0, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else if (!args.get()->seeds.empty()) {
-    timer.start(" allocating output btllib::SeedBloomFilter for includes (" + out_size_str + ")");
+    timer.start(" allocating output btllib::SeedBloomFilter (" + out_size_str + ")");
     btllib::SeedBloomFilter out_include(out_size, kmer_length, seeds, num_hashes);
     timer.stop();
     timer.start(" allocating excludes btllib::SeedBloomFilter (" + excludes_size_str + ")");
-    btllib::SeedBloomFilter out_exclude(out_size, kmer_length, seeds, num_hashes);
+    btllib::SeedBloomFilter out_exclude(excludes_size + 1, kmer_length, seeds, num_hashes);
     timer.stop();
     BloomFilterWrapper out(out_include, out_exclude);
     process(read_files, long_mode, kmer_length, seeds, f0, cmin, cmax, bf_size, cbf_size, out);

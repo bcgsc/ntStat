@@ -21,10 +21,14 @@ public:
 
   void save(const std::string& path)
   {
-    const std::string filename = std::filesystem::path(path).stem();
-    const std::string extension = std::filesystem::path(path).extension();
-    out_include.save(filename + "_include" + extension);
-    out_exclude.save(filename + "_exclude" + extension);
+    if (out_exclude.get_bytes() > 8) {
+      const std::string filename = std::filesystem::path(path).stem();
+      const std::string extension = std::filesystem::path(path).extension();
+      out_include.save(filename + "_include" + extension);
+      out_exclude.save(filename + "_exclude" + extension);
+    } else {
+      out_include.save(path);
+    }
   }
 
   unsigned get_hash_num() { return out_include.get_hash_num(); }

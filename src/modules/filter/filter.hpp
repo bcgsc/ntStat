@@ -67,7 +67,7 @@ inline void
 process_read(HashFunction& hash_fn, OutputBloomFilter& out, btllib::BloomFilter& distinct)
 {
   while (hash_fn.roll()) {
-    if (!distinct.contains_insert(hash_fn.hashes())) {
+    if (distinct.contains_insert(hash_fn.hashes())) {
       out.insert(hash_fn.hashes());
     }
   }

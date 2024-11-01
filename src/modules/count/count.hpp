@@ -71,6 +71,7 @@ process_kmers(const std::vector<std::string>& read_files,
   bar.mark_as_completed();
   std::cout << "total number of reads: " << num_reads << std::endl;
   timer.start("saving output files");
+  std::locale::global(std::locale::classic());
   counts.save(out_prefix + "counts.cbf");
   depths.save(out_prefix + "depths.cbf");
   timer.stop();
@@ -120,6 +121,7 @@ process_seeds(const std::vector<std::string>& read_files,
   bar.mark_as_completed();
   std::cout << "total number of reads: " << num_reads << std::endl;
   timer.start("saving output files");
+  std::locale::global(std::locale::classic());
   counts.save(out_prefix + "counts.cbf");
   depths.save(out_prefix + "depths.cbf");
   timer.stop();
