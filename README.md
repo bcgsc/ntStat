@@ -141,7 +141,7 @@ Optional arguments:
   -f             path to k-mer spectrum file (from ntCard) [required]
   -e             target output false positive rate [nargs=0..1] [default: 0.0001]
   -b             output BF/CBF size (bytes) 
-  -cmin          minimum count threshold (>=1) [nargs=0..1] [default: 1]
+  -cmin          minimum count threshold (>=1, or 0 for first minimum) [nargs=0..1] [default: 1]
   -cmax          maximum count threshold (<=255) [nargs=0..1] [default: 255]
   --counts       output counts (requires ~8x RAM for CBF) 
   --long         optimize for long read data 
