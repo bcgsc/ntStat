@@ -62,9 +62,9 @@ run(std::vector<std::string> argv)
   const auto bf_size = get_bf_size(num_bf_elements, cascade_fpr, num_hashes) / 8UL;
 
   uint64_t num_cbf_elements = 0;
-  if (args.get()->cmin == 1 && args.get()->cmax < 255) {
+  if (args.get()->cmin == 1) {
     num_cbf_elements = args.get()->histogram[1];
-  } else if (args.get()->cmin > 2 && args.get()->cmax < 255) {
+  } else if (args.get()->cmin > 2) {
     num_cbf_elements = args.get()->histogram[1] - args.get()->histogram[2];
   }
   const auto cbf_size = get_bf_size(num_cbf_elements, cascade_fpr, num_hashes);
@@ -102,7 +102,6 @@ run(std::vector<std::string> argv)
     btllib::KmerBloomFilter out_exclude(out_size, num_hashes, kmer_length);
     timer.stop();
     BloomFilterWrapper out(out_include, out_exclude);
-    timer.stop();
     process(read_files, long_mode, kmer_length, seeds, f0, cmin, cmax, bf_size, cbf_size, out);
     save(out, out_path);
   } else if (!args.get()->seeds.empty() && args.get()->counts) {
