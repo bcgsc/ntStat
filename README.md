@@ -6,8 +6,8 @@ ntStat is a toolkit that uses Bloom filters to track both *k*-mer count and dept
     - [Changing the installation prefix](#changing-the-installation-prefix)
     - [Installing in a specific directory](#installing-in-a-specific-directory)
 - [Dependencies](#dependencies)
-  - [General dependencies](#general-dependencies)
-  - [C++ libraries](#c-libraries)
+  - [Required dependencies](#required-dependencies)
+  - [Single-header C++ libraries](#single-header-c-libraries)
   - [Python packages](#python-packages)
 - [Modules](#modules)
   - [`count`](#count)
@@ -60,22 +60,25 @@ To install all dependencies in a fresh conda environment called `ntstat`:
 conda env create --file environment.yaml
 ```
 
-## General dependencies
+Alternatively, install the required dependencies according to their own installation guides. Download all single-header C++ libraries and add their paths to `CPATH`. If the `hist` module will be used, install the required Python packages using any package manager (e.g., `pip`).
+
+## Required dependencies
 
 - Python >= 3.9
 - C++ compiler with C++17 support
 - [Meson](https://mesonbuild.com/Quick-guide.html) and [meson-python](https://mesonbuild.com/meson-python/)
 - [ntCard](https://github.com/bcgsc/ntCard)
-
-## C++ libraries
-
 - [btllib](https://github.com/bcgsc/btllib) >=1.7.3
+
+## Single-header C++ libraries
+
 - [pybind11](https://github.com/pybind/pybind11)
 - [argparse](https://github.com/p-ranav/argparse)
 - [indicators](https://github.com/p-ranav/indicators)
 - [tabulate](https://github.com/p-ranav/tabulate)
 
 ## Python packages
+
 ```
 matplotlib
 numpy
