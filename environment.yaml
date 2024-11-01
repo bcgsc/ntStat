@@ -4,6 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - compilers
+  - python
   - meson
   - meson-python
   - cmake
@@ -11,14 +12,8 @@ dependencies:
   - cpp-argparse
   - cpp-tabulate
   - indicators
-  - kneed
+  - pybind11
   - matplotlib
   - numpy
-  - pandas
-  - pybind11
-  - python
-  - scikit-image
-  - scikit-learn
   - scipy
   - tabulate
-  - tqdm

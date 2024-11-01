@@ -71,10 +71,8 @@ def run(cmd_args: list[str]) -> int:
         ["Total number of k-mers", hist.num_total],
     ]
     thresh_rows = [
-        ["Elbow", hist.elbow + 1],
-        ["First minima", hist.first_minima + 1],
-        ["Mode after first minima", hist.mode_after_first_minima + 1],
-        ["Otsu thresholds", ", ".join(map(str, hist.otsu_thresholds + 1))],
+        ["First minima", int(hist.first_minima) + 1],
+        ["Mode after first minima", int(hist.mode_after_first_minima) + 1],
     ]
     dataset_rows = [
         ["Dataset size", f"{utils.format_bp(hist.num_total)}"],
@@ -115,9 +113,9 @@ def run(cmd_args: list[str]) -> int:
         x_crossover = model.get_weak_robust_crossover(np.arange(1, hist.max_count + 1))
         kmer_stats_rows.insert(1, ["Number of robust k-mers", num_robust])
         kmer_stats_rows.insert(2, ["Number of heterozygous k-mers", num_heterozygous])
-        thresh_rows.append(["Weak/robust crossover", x_crossover or "N/A"])
-        thresh_rows.append(["Heterozygous peak", np.rint(model.peaks[0]).astype(int)])
-        thresh_rows.append(["Homozygous peak", np.rint(model.peaks[1]).astype(int)])
+        thresh_rows.append(["Weak/robust crossover", int(x_crossover) or "N/A"])
+        thresh_rows.append(["Heterozygous peak", int(np.rint(model.peaks[0]))])
+        thresh_rows.append(["Homozygous peak", int(np.rint(model.peaks[1]))])
         dataset_rows.append(["Coverage", f"{model.coverage:.1f}x"])
         dataset_rows.append(["Robust rate", f"{robust_rate * 100:.2f}%"])
         dataset_rows.append(["Heterozygosity", f"{heterozygosity * 100:.2f}%"])

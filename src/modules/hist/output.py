@@ -1,3 +1,4 @@
+import csv
 import functools
 import itertools
 
@@ -5,9 +6,7 @@ import matplotlib.animation
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import tabulate
-import tqdm
 
 from .histogram import NtCardHistogram
 from .model import Model, score
@@ -84,17 +83,14 @@ def save_plot(
 
 
 def save_probs(hist: NtCardHistogram, model: Model, out_path: str):
+    headers = ["count", "frequency", "error", "heterozgous", "homozygous"]
     counts = np.arange(1, hist.max_count + 1)
     scores = model.score_components(counts)
-    pd.DataFrame.from_dict(
-        {
-            "count": counts,
-            "frequency": hist.values,
-            "error": scores[0, :],
-            "heterozgous": scores[1, :],
-            "homozygous": scores[2, :],
-        }
-    ).to_csv(out_path, index=False)
+    rows = zip(counts, hist.values, scores[0, :], scores[1, :], scores[2, :])
+    with open(out_path, mode="w", newline="") as file:
+        writer = csv.writer(file, delimiter="\t")
+        writer.writerow(headers)
+        writer.writerows(rows)
 
 
 def plot_fit_state(data, plots, x_range, error_history):
@@ -149,11 +145,6 @@ def save_fit_animation(
         x_range=x_range,
         error_history=error_history,
     )
-    progress_bar = tqdm.tqdm(
-        desc="Saving gif",
-        total=len(set(errors)),
-        leave=False,
-    )
     matplotlib.animation.FuncAnimation(
         fig,
         func,
@@ -165,5 +156,4 @@ def save_fit_animation(
         out_path,
         writer="pillow",
         fps=24,
-        progress_callback=lambda *_: progress_bar.update(),
     )
