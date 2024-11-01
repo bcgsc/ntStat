@@ -77,15 +77,10 @@ conda env create --file environment.yaml
 
 ## Python packages
 ```
-kneed
 matplotlib
 numpy
-pandas
-scikit-image
-scikit-learn
 scipy
 tabulate
-tqdm
 ```
 
 # Modules
