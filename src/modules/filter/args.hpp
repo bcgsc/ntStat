@@ -30,7 +30,7 @@ public:
       .scan<'g', float>();
     parser.add_argument("-b").help("output BF/CBF size (bytes)").scan<'u', size_t>();
     parser.add_argument("-cmin")
-      .help("minimum count threshold (>=1)")
+      .help("minimum count threshold (>=1, or 0 for first minimum)")
       .default_value(1U)
       .scan<'u', unsigned>();
     parser.add_argument("-cmax")
@@ -84,9 +84,12 @@ public:
       histogram.emplace_back(value);
     }
 
-    if (cmin == 0) {
-      throw std::runtime_error("cmin should be greater than 0");
+    for (unsigned i = 2; cmin == 0 && i < histogram.size() - 1; i++) {
+      if (histogram[i] <= histogram[i + 1]) {
+        cmin = i;
+      }
     }
+
     if (cmax > 255) {
       throw std::runtime_error("cmax should be less than 256");
     }
