@@ -1,0 +1,6 @@
+tests/ export-ignore
+.clang-format export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+azure-pipelines.yml export-ignore
+fit.gif export-ignore
