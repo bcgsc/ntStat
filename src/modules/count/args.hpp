@@ -27,7 +27,7 @@ public:
       .help("target output false positive rate")
       .default_value(0.0001F)
       .scan<'g', float>();
-    parser.add_argument("-b").help("output BF/CBF size (bytes)").scan<'u', size_t>();
+    parser.add_argument("-b").help("output CBF size (bytes)").scan<'u', size_t>();
     parser.add_argument("--long")
       .help("optimize for long read data")
       .default_value(false)

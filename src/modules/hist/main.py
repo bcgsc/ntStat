@@ -11,7 +11,7 @@ from .model import Model
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("path", help="k-mer spectrum file")
+    parser.add_argument("path", help="k-mer spectrum file (in ntCard format)")
     parser.add_argument("-p", "--ploidy", help="genome ploidy", type=int, default=2)
     parser.add_argument(
         "-f",
