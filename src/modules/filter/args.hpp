@@ -26,7 +26,7 @@ public:
     parser.add_argument("-f").help("path to k-mer spectrum file (from ntCard)").required();
     parser.add_argument("-e")
       .help("target output false positive rate")
-      .default_value(0.0001F)
+      .default_value(0.01F)
       .scan<'g', float>();
     parser.add_argument("-b").help("output BF/CBF size (bytes)").scan<'u', size_t>();
     parser.add_argument("-cmin")
@@ -86,7 +86,7 @@ public:
 
     for (unsigned i = 2; cmin == 0 && i < histogram.size() - 1; i++) {
       if (histogram[i] <= histogram[i + 1]) {
-        cmin = i;
+        cmin = i - 1;
       }
     }
 
