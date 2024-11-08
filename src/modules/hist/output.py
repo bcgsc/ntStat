@@ -47,7 +47,7 @@ def save_plot(
     x_range = np.arange(plot_range[0], plot_range[1])
     plt.style.use(style)
     fig, ax = plt.subplots()
-    ax.set_title(title.replace("^", "$"))
+    ax.set_title(title.replace("^", "$") if title else None)
     ax.set_xlabel(f"$k$-mer count")
     ax.set_ylabel("Frequency")
     ax.bar(x_range, hist.values[x_range - 1], width=1, label="Histogram")
@@ -83,7 +83,7 @@ def save_plot(
 
 
 def save_probs(hist: NtCardHistogram, model: Model, out_path: str):
-    headers = ["count", "frequency", "error", "heterozgous", "homozygous"]
+    headers = ["count", "frequency", "error", "heterozygous", "homozygous"]
     counts = np.arange(1, hist.max_count + 1)
     scores = model.score_components(counts)
     rows = zip(counts, hist.values, scores[0, :], scores[1, :], scores[2, :])
