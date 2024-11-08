@@ -29,13 +29,12 @@ run(std::vector<std::string> argv)
   size_t out_size;
   unsigned num_hashes;
   bool out_size_known = args.get()->out_size != 0;
-  const auto cascade_fpr = 1 - std::cbrt(1 - args.get()->target_fpr);
   if (out_size_known) {
     out_size = args.get()->out_size;
     num_hashes = num_elements * log(2) / out_size;
   } else {
     num_hashes = 3;
-    out_size = get_bf_size(num_elements, cascade_fpr, num_hashes);
+    out_size = get_bf_size(num_elements, args.get()->target_err / 0.3, num_hashes);
   }
 
   std::cout << "number of hash functions: " << num_hashes << std::endl;

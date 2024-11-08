@@ -12,7 +12,7 @@ public:
   std::vector<uint64_t> histogram;
   std::string out_path;
   size_t out_size;
-  float target_fpr;
+  float target_err;
   unsigned kmer_length;
   unsigned num_threads;
   bool long_mode;
@@ -24,8 +24,8 @@ public:
     parser.add_argument("-s").help("path to spaced seeds file (one per line, if -k not specified)");
     parser.add_argument("-f").help("path to k-mer spectrum file (from ntCard)").required();
     parser.add_argument("-e")
-      .help("target output false positive rate")
-      .default_value(0.01F)
+      .help("target output count error rate")
+      .default_value(0.001F)
       .scan<'g', float>();
     parser.add_argument("-b").help("output CBF size (bytes)").scan<'u', size_t>();
     parser.add_argument("--long")
@@ -43,7 +43,7 @@ public:
     reads_paths = parser.get<std::vector<std::string>>("reads");
     out_path = parser.get("-o");
     out_size = parser.is_used("-b") ? parser.get<size_t>("-b") : 0;
-    target_fpr = parser.get<float>("-e");
+    target_err = parser.get<float>("-e");
     num_threads = parser.get<unsigned>("-t");
     long_mode = parser.get<bool>("--long");
 
@@ -83,7 +83,7 @@ public:
       }
     }
     ss << "[-t] thread limit: " << num_threads << std::endl;
-    ss << "[-e] target output false-positive rate: " << target_fpr << std::endl;
+    ss << "[-e] target output false-positive rate: " << target_err << std::endl;
     return ss.str();
   }
 
