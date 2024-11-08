@@ -105,30 +105,33 @@ process_kmers(const std::vector<std::string>& read_files,
               ReadProcessorArgs&... args)
 {
   std::atomic<size_t> num_kmers_done{ 0 };
-  std::atomic<size_t> num_reads{ 0 };
-  std::atomic<unsigned> percent_done{ 0 };
   indicators::BlockProgressBar bar{
     indicators::option::BarWidth{ 30 },
     indicators::option::ShowElapsedTime{ true },
     indicators::option::ShowRemainingTime{ true },
     indicators::option::PrefixText{ "processing " },
+    indicators::option::MaxProgress{ num_kmers },
   };
+  const size_t progress_interval = num_kmers / 100;
+  size_t last_progress_threshold = 0;
   const auto seq_reader_flag = get_seq_reader_flag(long_mode);
   for (size_t i = 0; i < read_files.size(); i++) {
     btllib::SeqReader seq_reader(read_files[i], seq_reader_flag);
 #pragma omp parallel shared(seq_reader)
     for (const auto& record : seq_reader) {
+      if (record.seq.size() < kmer_length) {
+        continue;
+      }
       btllib::NtHash hash_fn(record.seq, out.get_hash_num(), kmer_length);
       process_read(hash_fn, out, args...);
       num_kmers_done += record.seq.size() - kmer_length + 1;
-#pragma omp critical
-      if (num_kmers_done * 100 / num_kmers > percent_done) {
-        percent_done = num_kmers_done * 100 / num_kmers;
-        bar.set_progress(percent_done);
+      if (num_kmers_done >= (last_progress_threshold + progress_interval)) {
+        bar.set_progress(num_kmers_done);
+        last_progress_threshold = num_kmers_done;
       }
     }
   }
-  bar.set_progress(100);
+  bar.set_progress(num_kmers);
   bar.mark_as_completed();
 }
 
@@ -141,30 +144,32 @@ process_seeds(const std::vector<std::string>& read_files,
               OutputBloomFilter& out,
               ReadProcessorArgs&... args)
 {
-  size_t total_elements = num_kmers * seeds.size();
   std::atomic<size_t> num_kmers_done{ 0 };
-  std::atomic<size_t> num_reads{ 0 };
-  std::atomic<unsigned> percent_done{ 0 };
   indicators::BlockProgressBar bar{
     indicators::option::BarWidth{ 30 },
     indicators::option::ShowElapsedTime{ true },
     indicators::option::ShowRemainingTime{ true },
     indicators::option::PrefixText{ "processing " },
+    indicators::option::MaxProgress{ num_kmers },
   };
+  const size_t progress_interval = num_kmers / 100;
+  size_t last_progress_threshold = 0;
   const auto seq_reader_flag = get_seq_reader_flag(long_mode);
   for (size_t i = 0; i < read_files.size(); i++) {
     btllib::SeqReader seq_reader(read_files[i], seq_reader_flag);
 #pragma omp parallel shared(seq_reader)
     for (const auto& record : seq_reader) {
       for (const auto& seed : seeds) {
+        if (record.seq.size() < seed.size()) {
+          continue;
+        }
         btllib::SeedNtHash hash_fn(record.seq, { seed }, out.get_hash_num(), seed.size());
         process_read(hash_fn, out, args...);
-        num_kmers_done += record.seq.size() - seed.size() + 1;
-#pragma omp critical
-        if (num_kmers_done * 100 / total_elements > percent_done) {
-          percent_done = num_kmers_done * 100 / total_elements;
-          bar.set_progress(percent_done);
-        }
+      }
+      num_kmers_done += record.seq.size() - seeds[0].size() + 1;
+      if (num_kmers_done >= (last_progress_threshold + progress_interval)) {
+        bar.set_progress(num_kmers_done);
+        last_progress_threshold = num_kmers_done;
       }
     }
   }
