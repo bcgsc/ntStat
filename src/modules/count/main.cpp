@@ -31,7 +31,7 @@ run(std::vector<std::string> argv)
   bool out_size_known = args.get()->out_size != 0;
   if (out_size_known) {
     out_size = args.get()->out_size;
-    num_hashes = num_elements * log(2) / out_size;
+    num_hashes = (double)out_size / (double)num_elements * log(2);
   } else {
     num_hashes = 3;
     out_size = get_bf_size(num_elements, args.get()->target_err / 0.3, num_hashes);

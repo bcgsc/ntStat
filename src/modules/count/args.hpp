@@ -83,7 +83,7 @@ public:
       }
     }
     ss << "[-t] thread limit: " << num_threads << std::endl;
-    ss << "[-e] target output false-positive rate: " << target_err << std::endl;
+    ss << "[-e] target output error rate: " << target_err << std::endl;
     return ss.str();
   }
 
