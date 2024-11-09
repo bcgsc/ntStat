@@ -119,13 +119,6 @@ Optional arguments:
 
 Gathers *k*-mer counts ONLY and saves *k*-mers that occur at least `-cmin` times and at most `-cmax` times in a Bloom filter. Optionally, output can be a counting Bloom filter (set `--counts`), which includes the filtered *k*-mers' counts, resulting in a 8x larger output file.
 
-**IMPORTANT:** The counts stored in the output CBF will be exactly one less than the *k*-mers' true counts when using `--count -cmin 2`. In other words, when querying the output CBF:
-
-```C++
-const unsigned cbf_output = cbf.contains(kmer);
-const unsigned kmer_count = cbf_output > 0 ? cbf_output + 1 : 0;
-```
-
 
 ```
 Usage: ntstat filter [--help] [--version] [-k VAR] [-s VAR] -f VAR [-e VAR] [-b VAR] [-cmin VAR] [-cmax VAR] [--counts] [--long] [-t VAR] -o VAR reads
