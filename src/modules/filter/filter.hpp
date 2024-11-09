@@ -25,9 +25,9 @@ process_read(HashFunction& hash_fn,
     const unsigned count = intermediate.insert_contains(hash_fn.hashes()) + 1U;
     if (count == min_count) {
       out.insert(hash_fn.hashes(), min_count);
-    } else if (count > min_count && count < max_count) {
+    } else if (count > min_count && count <= max_count) {
       out.insert(hash_fn.hashes());
-    } else if (count == max_count) {
+    } else if (count == max_count + 1) {
       out.clear(hash_fn.hashes());
     }
   }
@@ -43,9 +43,9 @@ process_read(HashFunction& hash_fn,
 {
   while (hash_fn.roll()) {
     const unsigned count = intermediate.insert_contains(hash_fn.hashes());
-    if (count < max_count) {
+    if (count <= max_count) {
       out.insert(hash_fn.hashes());
-    } else if (count == max_count) {
+    } else if (count == max_count + 1) {
       out.clear(hash_fn.hashes());
     }
   }
@@ -67,7 +67,12 @@ inline void
 process_read(HashFunction& hash_fn, OutputBloomFilter& out, btllib::BloomFilter& distinct)
 {
   while (hash_fn.roll()) {
-    if (distinct.contains_insert(hash_fn.hashes())) {
+    if (!distinct.contains_insert(hash_fn.hashes())) {
+      continue;
+    }
+    if (!out.contains(hash_fn.hashes())) {
+      out.insert(hash_fn.hashes(), 2);
+    } else {
       out.insert(hash_fn.hashes());
     }
   }
@@ -196,10 +201,10 @@ process(const std::vector<std::string>& read_files,
   const auto cbf_size_str = human_readable(cbf_size);
   if (cmin >= 2 && cmax < 255) {
     timer.start(" allocating distincts bloom filter (" + bf_size_str + ")");
-    btllib::BloomFilter bf(bf_size, out.get_hash_num());
+    btllib::BloomFilter bf(bf_size + 1, out.get_hash_num());
     timer.stop();
     timer.start(" allocating intermediate counting bloom filter (" + cbf_size_str + ")");
-    btllib::CountingBloomFilter8 cbf(cbf_size, out.get_hash_num());
+    btllib::CountingBloomFilter8 cbf(cbf_size + 1, out.get_hash_num());
     timer.stop();
     std::cout << std::endl;
     if (using_kmers) {
@@ -209,7 +214,7 @@ process(const std::vector<std::string>& read_files,
     }
   } else if (cmin == 1 && cmax < 255) {
     timer.start(" allocating intermediate counting bloom filter (" + cbf_size_str + ")");
-    btllib::CountingBloomFilter8 cbf(cbf_size, out.get_hash_num());
+    btllib::CountingBloomFilter8 cbf(cbf_size + 1, out.get_hash_num());
     timer.stop();
     std::cout << std::endl;
     if (using_kmers) {
@@ -225,7 +230,7 @@ process(const std::vector<std::string>& read_files,
     }
   } else if (cmin == 2 && cmax == 255) {
     timer.start(" allocating distincts bloom filter (" + bf_size_str + ")");
-    btllib::BloomFilter bf(bf_size, out.get_hash_num());
+    btllib::BloomFilter bf(bf_size + 1, out.get_hash_num());
     timer.stop();
     std::cout << std::endl;
     if (using_kmers) {
@@ -235,10 +240,10 @@ process(const std::vector<std::string>& read_files,
     }
   } else if (cmin > 2 and cmax == 255) {
     timer.start(" allocating distincts bloom filter (" + bf_size_str + ")");
-    btllib::BloomFilter bf(bf_size, out.get_hash_num());
+    btllib::BloomFilter bf(bf_size + 1, out.get_hash_num());
     timer.stop();
     timer.start(" allocating intermediate counting bloom filter (" + cbf_size_str + ")");
-    btllib::CountingBloomFilter8 cbf(cbf_size, out.get_hash_num());
+    btllib::CountingBloomFilter8 cbf(cbf_size + 1, out.get_hash_num());
     timer.stop();
     std::cout << std::endl;
     if (using_kmers) {

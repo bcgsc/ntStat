@@ -17,6 +17,8 @@ public:
 
   void insert(const uint64_t* hashes, uint8_t = 1) { out_include.insert(hashes); }
 
+  bool contains(const uint64_t* hashes) { return out_include.contains(hashes); }
+
   void clear(const uint64_t* hashes) { out_exclude.insert(hashes); }
 
   void save(const std::string& path)

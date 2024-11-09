@@ -44,14 +44,14 @@ run(std::vector<std::string> argv)
   size_t out_size;
   unsigned num_hashes;
   bool out_size_known = args.get()->out_size != 0;
-  const auto cascade_fpr = 1 - std::cbrt(1 - args.get()->target_fpr);
+  const auto cascade_fpr = std::cbrt(args.get()->target_err);
   if (out_size_known) {
     out_size = args.get()->out_size;
-    num_hashes = num_elements * log(2) / out_size;
+    num_hashes = (double)out_size / (double)num_elements * log(2);
   } else {
     num_hashes = 3;
     out_size = get_bf_size(num_elements, cascade_fpr, num_hashes);
-    out_size /= args.get()->counts ? 1UL : 8UL;
+    out_size *= args.get()->counts ? 8UL : 1UL;
   }
 
   size_t excludes_size = 0;
@@ -60,13 +60,14 @@ run(std::vector<std::string> argv)
   }
 
   const auto num_bf_elements = args.get()->cmin > 1 ? args.get()->histogram[1] : 0;
-  const auto bf_size = get_bf_size(num_bf_elements, cascade_fpr, num_hashes) / 8UL;
+  const auto bf_size = get_bf_size(num_bf_elements, cascade_fpr, num_hashes);
 
   uint64_t num_cbf_elements = 0;
-  if (args.get()->cmin == 1) {
+  if (args.get()->cmin == 1 && args.get()->cmax < 255) {
     num_cbf_elements = args.get()->histogram[1];
   } else if (args.get()->cmin > 2) {
     num_cbf_elements = args.get()->histogram[1] - args.get()->histogram[2];
+    num_cbf_elements += args.get()->histogram[1] * cascade_fpr;
   }
   const auto cbf_size = get_bf_size(num_cbf_elements, cascade_fpr, num_hashes);
 
