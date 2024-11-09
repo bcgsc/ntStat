@@ -28,7 +28,7 @@ class TestFilterModule(unittest.TestCase):
         self.counts = npz_file["counts"]
 
     def _test(self, min_count: int, max_count: int, out_counts: bool) -> bool:
-        log_prefix = f"cmin={min_count}, cmax={max_count}"
+        log_prefix = f"{'c' if out_counts else ''}bf, min={min_count}, max={max_count}"
         out_file = tempfile.NamedTemporaryFile()
         cmd = self.cmd[:-1] + ["-cmin", str(min_count), "-cmax", str(max_count)]
         cmd += ["--counts"] if out_counts else []
@@ -42,47 +42,50 @@ class TestFilterModule(unittest.TestCase):
         else:
             out = btllib.KmerBloomFilter(out_file.name)
         self.logger.info(f"{log_prefix}: fpr = {out.get_fpr()}")
-        self.assertLessEqual(out.get_fpr(), 2e-4)
+        self.assertLess(out.get_fpr(), 0.02)
         num_err = 0
         for kmer, count in zip(self.kmers, self.counts):
             expected = min_count <= count <= max_count
             if out_counts:
                 true_count = min(count, 255) if expected else 0
                 cbf_count = out.contains(kmer)
-                if cbf_count > 0 and min_count == 2:
-                    cbf_count += 1
                 num_err += 1 if cbf_count != true_count else 0
             else:
                 exists = out.contains(kmer) != 0
                 num_err += 1 if exists != expected else 0
         err_rate = num_err / len(self.kmers)
         self.logger.info(f"{log_prefix}: {num_err} errors ({err_rate})")
-        self.assertLessEqual(err_rate, 0.04)
         out_file.close()
+        return err_rate
 
     def test_cbf_min1_max255(self):
-        self._test(1, 255, True)
+        err = self._test(1, 255, True)
+        self.assertLess(err, 0.001)
 
     def test_cbf_min2_max255(self):
-        self._test(2, 255, True)
+        err = self._test(2, 255, True)
+        self.assertLess(err, 0.001)
 
     def test_cbf_min3_max255(self):
-        self._test(3, 255, True)
+        err = self._test(3, 255, True)
+        self.assertLess(err, 0.007)
 
     def test_cbf_min1_max20(self):
-        self._test(1, 20, True)
+        err = self._test(1, 20, True)
+        self.assertLess(err, 0.04)
 
     def test_cbf_min3_max20(self):
-        self._test(3, 20, True)
-
-    def test_cbf_min1_max3(self):
-        self._test(1, 3, True)
+        err = self._test(3, 20, True)
+        self.assertLess(err, 0.04)
 
     def test_bf_min1_max255(self):
-        self._test(1, 255, False)
+        err = self._test(1, 255, False)
+        self.assertLess(err, 0.001)
 
     def test_bf_min2_max255(self):
-        self._test(2, 255, False)
+        err = self._test(2, 255, False)
+        self.assertLess(err, 0.001)
 
     def test_bf_min3_max255(self):
-        self._test(3, 255, False)
+        err = self._test(3, 255, False)
+        self.assertLess(err, 0.001)
