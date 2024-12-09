@@ -69,7 +69,6 @@ public:
       std::string line;
       while (file >> line) {
         seeds.emplace_back(line);
-        std::cout << line << std::endl;
       }
     } else if (parser.is_used("-k")) {
       kmer_length = parser.get<unsigned>("-k");
