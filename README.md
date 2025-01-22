@@ -48,8 +48,6 @@ Add `--destdir DESTDIR` to `meson install` to change the installation path to `D
 ```shell
 meson setup build
 meson install -C build --destdir install
-export PATH="$(pwd)/build/install/usr/local/bin/:$PATH"
-export PYTHONPATH="$(pwd)/build/install/usr/local/lib/python3.10/site-packages:$PYTHONPATH"
 ```
 
 # Dependencies
