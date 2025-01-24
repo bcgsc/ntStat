@@ -3,17 +3,26 @@ import scipy.optimize
 import scipy.special
 import scipy.stats
 
+err_dists = [(lambda p: scipy.stats.gamma(*p), 3), (lambda p: scipy.stats.expon(*p), 2)]
+
+genomic_dists = [
+    (lambda p: scipy.stats.nbinom(*p), 2),
+    (lambda p: scipy.stats.norm(*p), 2),
+    (lambda p: scipy.stats.skewnorm(p[1], p[0]), 2),
+]
+
 
 def update_components(params):
-    num_components = (len(params) - 4) // 3
-    weights = [params[0]]
-    rvs = [scipy.stats.gamma(params[1], params[2], 1 / params[3])]
+    num_components = (len(params) - 6) // 3
+    err, num_err_params = err_dists[int(params[0])]
+    genomic, num_rv_params = genomic_dists[int(params[1])]
+    weights = [params[2]]
+    rvs = [err(params[3 : num_err_params + 3])]
     for i in range(num_components):
-        i_w = 4 + i * 3
-        w, cvr, p = params[i_w : i_w + 3]
-        r = cvr * p / (1 - p + np.finfo(float).eps)
-        weights.append(w)
-        rvs.append(scipy.stats.nbinom(r, p))
+        i_w = 6 + i * 3
+        weights.append(params[i_w])
+        rv_params = params[i_w + 1 : i_w + num_rv_params + 1]
+        rvs.append(genomic(rv_params))
     sum_w = sum(weights)
     components = [(w / sum_w, rv) for w, rv in zip(weights, rvs)]
     return components
@@ -81,7 +90,7 @@ class Model:
 
     def get_responsibilities(self, x):
         scores = self.score_components(x)
-        return scores / scores.sum(axis=0)
+        return np.nan_to_num(scores / scores.sum(axis=0))
 
     def get_weak_robust_crossover(self, x):
         scores = self.score_components(x)
@@ -93,21 +102,20 @@ class Model:
     def fit(self, hist, num_components=2, config=dict()):
         x, y = np.arange(1, hist.max_count + 1), hist.as_distribution()
         bounds = [
+            (0, len(err_dists) - 1),
+            (0, len(genomic_dists) - 1),
             (0, 1),
             (0, 1),
             (0, 1),
             (0, 1),
         ]
-        x0 = [1, 0.5, 0.9, 0.9]
+        x0 = [0, 0, 1, 0.5, 0.9, 0.9]
         d = y[hist.first_minima :].argmax() + hist.first_minima + 1
         for i in range(num_components):
             bounds.extend([(0, 1), (hist.first_minima, d * 3), (0, 1)])
-            xm, r0 = (i + 1) * d // 2, 0.8
-            w0 = y[xm - 1] / scipy.stats.nbinom.pmf(xm, xm * r0 / (1 - r0), r0)
-            x0.extend([w0, xm, r0])
-            x0[0] -= w0
+            x0.extend([0.5, (i + 1) * d // 2, 0.5])
         history = []
-        max_iters = config.get("maxiter", 1000)
+        max_iters = config.get("maxiter", 2000)
         callback = lambda intermediate_result: log_iteration(
             intermediate_result,
             history,
@@ -118,6 +126,7 @@ class Model:
             init=config.get("init", "sobol"),
             x0=x0,
             bounds=bounds,
+            integrality=[True, True] + [False] * (len(bounds) - 2),
             args=(x, y),
             seed=config.get("seed", 42),
             updating="deferred",
