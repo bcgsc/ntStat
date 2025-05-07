@@ -48,12 +48,12 @@ public:
     long_mode = parser.get<bool>("--long");
 
     if (parser.is_used("-s")) {
-      kmer_length = 0;
       std::ifstream file(parser.get("-s"));
       std::string line;
       while (file >> line) {
         seeds.emplace_back(line);
       }
+      kmer_length = seeds[0].size();
     } else if (parser.is_used("-k")) {
       kmer_length = parser.get<unsigned>("-k");
     } else {
