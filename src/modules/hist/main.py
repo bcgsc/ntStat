@@ -39,8 +39,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--plot-range",
         help="plot x-axis limits (inclusive) separated by a colon, "
         "i.e., use a:b to show results in the range [a, b]. "
-        "'auto' will automatically adjust the limits for better visibility.",
+        "'auto' will automatically adjust the limits for better visibility (default).",
         type=utils.validate_plot_range_str,
+        default="auto",
     )
     parser.add_argument("-o", "--plot", help="path to output plot")
     parser.add_argument(
